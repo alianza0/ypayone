@@ -16,6 +16,11 @@ jobs:
 
       - run: flutter pub get
 
+      - name: Ajustes iOS (version minima y nombre)
+        run: |
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' ios/Runner.xcodeproj/project.pbxproj
+          plutil -replace CFBundleDisplayName -string ypayone ios/Runner/Info.plist
+
       - run: flutter build ios --release --no-codesign
 
       - name: Empaquetar como .ipa
