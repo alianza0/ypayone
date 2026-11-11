@@ -12,4 +12,5 @@ class ContactsColors {
   static const Color divider = Color(0xFFE6E4EE);
   static const Color phoneIcon = Color(0xFF9C4DCC);
   static const Color edit = Color(0xFF1BC5B1);
+  static const Color title = Color(0xFF6E1B96); // "Lista" morado
 }

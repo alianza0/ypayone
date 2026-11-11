@@ -6,6 +6,7 @@ import '../../core/phone_utils.dart';
 import '../../data/sample_contacts.dart';
 import '../../models/app_contact.dart';
 import '../../widgets/app_message.dart';
+import '../../widgets/asset_slot.dart';
 import '../../widgets/circle_icon_button.dart';
 import '../send/send_amount_screen.dart';
 import 'widgets/contact_tile.dart';
@@ -96,13 +97,16 @@ class _ContactsScreenState extends State<ContactsScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: ContactsColors.background,
+        // Blanco: es lo que queda detrás del teclado.
+        backgroundColor: Colors.white,
         // Pie blanco fijo: la lista pasa por detrás y no llega al borde.
         bottomNavigationBar: Container(
           color: Colors.white,
           height: MediaQuery.paddingOf(context).bottom + 12,
         ),
-        body: Column(
+        body: ColoredBox(
+          color: ContactsColors.background,
+          child: Column(
           children: [
             _buildTopBar(collapse),
             Expanded(
@@ -176,6 +180,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -208,13 +213,12 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       child: Transform.translate(
                         offset: Offset(0, (1 - t) * 14),
                         child: Text(
-                          _searching ? 'Enviar' : 'Lista',
+                          'Lista',
                           maxLines: 1,
                           style: appFont(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w400,
-                            color: Colors.black,
-                            height: 1.0,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            color: ContactsColors.textDark,
                           ),
                         ),
                       ),
@@ -245,19 +249,12 @@ class _ContactsScreenState extends State<ContactsScreen> {
         child: Transform.translate(
           offset: Offset(0, -collapse * 10),
           child: Text(
-            _searching ? 'Enviar' : 'Lista',
-            style: _searching
-                ? appFont(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF7B0E9B),
-                  )
-                : appFont(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.black,
-                    letterSpacing: -0.5,
-                  ),
+            'Lista',
+            style: appFont(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: ContactsColors.title,
+            ),
           ),
         ),
       ),
@@ -342,12 +339,9 @@ class _ContactsScreenState extends State<ContactsScreen> {
                 child: Row(
                   children: [
                     const SizedBox(width: 12),
-                    const Icon(
-                      Icons.smartphone_outlined,
-                      color: ContactsColors.phoneIcon,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 22),
+                    // Tu imagen: assets/icons/nuevo_numero.png
+                    const AssetSlot('assets/icons/nuevo_numero.png', size: 28),
+                    const SizedBox(width: 20),
                     Expanded(
                       child: Text(
                         'Nuevo número',
@@ -447,7 +441,8 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       ],
                     ),
                   ),
-                  const _SendBadge(),
+                  // Tu imagen: assets/icons/enviar_soles.png
+                  const AssetSlot('assets/icons/enviar_soles.png', size: 32),
                 ],
               ),
             ),
@@ -478,32 +473,6 @@ class _ContactsScreenState extends State<ContactsScreen> {
           fontSize: 16.5,
           fontWeight: FontWeight.w500,
           color: ContactsColors.textDark,
-        ),
-      ),
-    );
-  }
-}
-
-/// Iconito morado "S/" de la fila "A nuevo celular".
-class _SendBadge extends StatelessWidget {
-  const _SendBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 30,
-      height: 30,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: ContactsColors.phoneIcon, width: 2),
-      ),
-      child: Text(
-        'S/',
-        style: appFont(
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          color: ContactsColors.phoneIcon,
         ),
       ),
     );
