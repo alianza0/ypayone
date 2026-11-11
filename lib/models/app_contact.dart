@@ -4,6 +4,14 @@ class AppContact {
 
   const AppContact(this.name, this.phone);
 
+  /// Contacto sin nombre (número nuevo): se muestra el número como nombre.
+  factory AppContact.number(String phone) {
+    final c = AppContact('', phone);
+    return AppContact(c.formattedPhone, phone);
+  }
+
+  bool get _nameIsNumber => RegExp(r'^[\d ]+$').hasMatch(name.trim());
+
   /// "Rosa Fabián" → "RF"
   String get initials {
     final parts = name.trim().split(RegExp(r'\s+'));
@@ -15,6 +23,7 @@ class AppContact {
 
   /// "Rosa Fabián" → "Rosa Fab*"
   String get maskedName {
+    if (_nameIsNumber) return maskedPhone;
     final parts = name.trim().split(RegExp(r'\s+'));
     if (parts.length < 2) return parts.first;
     final last = parts[1];
