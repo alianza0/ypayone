@@ -88,42 +88,82 @@ class _AuthScaffoldState extends State<AuthScaffold>
       content = Form(key: widget.formKey, child: content);
     }
 
+    // Con el teclado abierto se oculta la cabecera y el panel sube arriba.
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 80;
+    const collapseDuration = Duration(milliseconds: 320);
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: AppColors.primaryDark,
-        body: Stack(
-          children: [
-            const Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 300,
-              child: CustomPaint(painter: WavePainter()),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+        // Blanco: es lo que queda detrás del teclado (antes se veía morado).
+        backgroundColor: Colors.white,
+        body: GestureDetector(
+          // Tocar fuera de un campo cierra el teclado (el teclado numérico no tiene "OK").
+          onTap: () => FocusScope.of(context).unfocus(),
+          behavior: HitTestBehavior.translucent,
+          child: ColoredBox(
+            color: AppColors.primaryDark,
+            child: Stack(
               children: [
-                SafeArea(bottom: false, child: _buildHeader()),
-                Expanded(
-                  child: SlideTransition(
-                    position: sheetSlide,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius:
-                            BorderRadius.vertical(top: Radius.circular(36)),
-                      ),
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-                        child: content,
+                const Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 300,
+                  child: CustomPaint(painter: WavePainter()),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SafeArea(
+                      bottom: false,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          ClipRect(
+                            child: AnimatedAlign(
+                              duration: collapseDuration,
+                              curve: Curves.easeOutCubic,
+                              alignment: Alignment.topLeft,
+                              heightFactor: keyboardOpen ? 0 : 1,
+                              child: AnimatedOpacity(
+                                duration: const Duration(milliseconds: 200),
+                                opacity: keyboardOpen ? 0 : 1,
+                                child: _buildHeader(),
+                              ),
+                            ),
+                          ),
+                          AnimatedContainer(
+                            duration: collapseDuration,
+                            curve: Curves.easeOutCubic,
+                            height: keyboardOpen ? 16 : 0,
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                    Expanded(
+                      child: SlideTransition(
+                        position: sheetSlide,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            borderRadius:
+                                BorderRadius.vertical(top: Radius.circular(36)),
+                          ),
+                          child: SingleChildScrollView(
+                            keyboardDismissBehavior:
+                                ScrollViewKeyboardDismissBehavior.onDrag,
+                            padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                            child: content,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
