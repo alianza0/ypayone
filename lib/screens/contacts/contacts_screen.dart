@@ -5,6 +5,8 @@ import '../../core/app_text.dart';
 import '../../data/sample_contacts.dart';
 import '../../models/app_contact.dart';
 import '../../widgets/app_message.dart';
+import '../../widgets/circle_icon_button.dart';
+import '../send/send_amount_screen.dart';
 import 'widgets/contact_tile.dart';
 import 'widgets/contacts_colors.dart';
 import 'widgets/suggested_contacts.dart';
@@ -39,6 +41,13 @@ class _ContactsScreenState extends State<ContactsScreen> {
         .toList();
   }
 
+  void _openSend(AppContact contact) {
+    FocusScope.of(context).unfocus();
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => SendAmountScreen(contact: contact)),
+    );
+  }
+
   void _soon(String what) {
     showAppMessage(context, '$what estará disponible pronto.', error: false);
   }
@@ -69,7 +78,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                 SliverToBoxAdapter(
                   child: SuggestedContacts(
                     contacts: _suggested,
-                    onTap: (c) => _soon('Enviar a ${c.maskedName}'),
+                    onTap: _openSend,
                     onSaved: (list) => setState(() => _suggested = list),
                   ),
                 ),
@@ -82,7 +91,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                   color: Colors.white,
                   child: ContactTile(
                     contact: contacts[i],
-                    onTap: () => _soon('Enviar a ${contacts[i].name}'),
+                    onTap: () => _openSend(contacts[i]),
                   ),
                 ),
               ),
@@ -129,21 +138,10 @@ class _ContactsScreenState extends State<ContactsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              GestureDetector(
+              CircleIconButton(
+                icon: Icons.arrow_back_rounded,
+                heroTag: navBackHeroTag,
                 onTap: () => Navigator.of(context).maybePop(),
-                child: Container(
-                  width: 34,
-                  height: 34,
-                  decoration: const BoxDecoration(
-                    color: ContactsColors.soft,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back_rounded,
-                    color: Colors.black,
-                    size: 20,
-                  ),
-                ),
               ),
               const SizedBox(height: 12),
               Text(
