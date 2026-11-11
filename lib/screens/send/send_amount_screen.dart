@@ -83,7 +83,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
             child: Column(
               children: [
                 _buildHeader(),
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
@@ -109,6 +109,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                           AmountDisplay(
                             controller: _amountCtrl,
                             focusNode: _amountFocus,
+                            autofocus: true,
                           ),
                           const SizedBox(height: 6),
                           _buildLimitChip(),
@@ -143,7 +144,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 36),
               ],
             ),
           ),
@@ -154,7 +155,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       child: Row(
         children: [
           CircleIconButton(

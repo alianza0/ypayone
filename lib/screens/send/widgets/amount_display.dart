@@ -12,10 +12,14 @@ class AmountDisplay extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
 
+  /// Abre el teclado apenas se muestra la pantalla.
+  final bool autofocus;
+
   const AmountDisplay({
     super.key,
     required this.controller,
     required this.focusNode,
+    this.autofocus = false,
   });
 
   @override
@@ -96,6 +100,7 @@ class _AmountDisplayState extends State<AmountDisplay>
                 child: TextField(
                   controller: widget.controller,
                   focusNode: widget.focusNode,
+                  autofocus: widget.autofocus,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [_AmountFormatter()],
