@@ -16,6 +16,16 @@ class AppColors {
   static const Color hint = Color(0xFF9A9A9A);
   static const Color error = Color(0xFFD64545);
 
+  // Pantalla principal (Home)
+  static const Color orange = Color(0xFFFF6A00);
+  static const Color orangeText = Color(0xFFE8650A);
+  static const Color purpleAction = Color(0xFF6A1B9A);
+  static const Color promoChip = Color(0xFF7B2CBF);
+  static const Color promoBg = Color(0xFFFDE7DC);
+  static const Color promoTitle = Color(0xFF1F1F2E);
+  static const Color teal = Color(0xFF179C8E);
+  static const Color blue = Color(0xFF0B57A4);
+
   static const LinearGradient button = LinearGradient(
     colors: [Color(0xFF6F2A8A), primaryDark],
     begin: Alignment.centerLeft,
