@@ -5,6 +5,7 @@ import '../../core/app_text.dart';
 import '../../models/app_contact.dart';
 import '../../widgets/app_message.dart';
 import '../../widgets/circle_icon_button.dart';
+import '../../widgets/skeleton_box.dart';
 import 'widgets/amount_display.dart';
 
 /// Pantalla "Enviar a": monto, mensaje y botones.
@@ -25,6 +26,11 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   final _amountFocus = FocusNode();
   final _messageCtrl = TextEditingController();
 
+  /// Primero se muestra la carga (skeleton) y luego el contenido + teclado.
+  bool _loading = true;
+  static const _loadingTime = Duration(seconds: 3);
+  static const _reveal = Duration(milliseconds: 350);
+
   static const _textDark = Color(0xFF2A2540);
   static const _chipBg = Color(0xFFF1EFF8);
   static const _divider = Color(0xFFE2E0EA);
@@ -35,6 +41,14 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   void initState() {
     super.initState();
     _amountCtrl.addListener(() => setState(() {}));
+    Future.delayed(_loadingTime, () {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      // Abre el teclado cuando ya terminó de aparecer el contenido.
+      Future.delayed(_reveal, () {
+        if (mounted) _amountFocus.requestFocus();
+      });
+    });
   }
 
   @override
@@ -86,15 +100,32 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                 const SizedBox(height: 20),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Text(
-                    widget.contact.name,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: appFont(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: sendPurple,
+                  child: SizedBox(
+                    height: 64,
+                    child: AnimatedSwitcher(
+                      duration: _reveal,
+                      child: _loading
+                          ? const SkeletonBox(
+                              key: ValueKey('name-skeleton'),
+                              width: double.infinity,
+                              height: 64,
+                              radius: 2,
+                            )
+                          : Align(
+                              key: const ValueKey('name'),
+                              alignment: Alignment.topCenter,
+                              child: Text(
+                                widget.contact.name,
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: appFont(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w700,
+                                  color: sendPurple,
+                                ),
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -106,13 +137,31 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          AmountDisplay(
-                            controller: _amountCtrl,
-                            focusNode: _amountFocus,
-                            autofocus: true,
+                          IgnorePointer(
+                            ignoring: _loading,
+                            child: AmountDisplay(
+                              controller: _amountCtrl,
+                              focusNode: _amountFocus,
+                            ),
                           ),
                           const SizedBox(height: 6),
-                          _buildLimitChip(),
+                          SizedBox(
+                            height: 24,
+                            child: AnimatedSwitcher(
+                              duration: _reveal,
+                              child: _loading
+                                  ? const SkeletonBox(
+                                      key: ValueKey('chip-skeleton'),
+                                      width: 160,
+                                      height: 24,
+                                      radius: 12,
+                                    )
+                                  : KeyedSubtree(
+                                      key: const ValueKey('chip'),
+                                      child: _buildLimitChip(),
+                                    ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
