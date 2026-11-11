@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/app_text.dart';
+import '../../core/navigation.dart';
 import '../../models/app_contact.dart';
 import '../../widgets/app_message.dart';
 import '../../widgets/circle_icon_button.dart';
 import '../../widgets/skeleton_box.dart';
+import 'send_receipt_screen.dart';
 import 'widgets/amount_display.dart';
+import 'widgets/sending_overlay.dart';
 
 /// Pantalla "Enviar a": monto, mensaje y botones.
 class SendAmountScreen extends StatefulWidget {
@@ -68,13 +71,26 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
-  void _send() {
+  Future<void> _send() async {
     FocusScope.of(context).unfocus();
-    showAppMessage(
-      context,
-      'Enviar S/ ${_amount.toStringAsFixed(2)} a ${widget.contact.name} '
-      'estará disponible pronto.',
-      error: false,
+    final navigator = Navigator.of(context);
+    final amount = _amount;
+    final message = _messageCtrl.text.trim();
+    final when = DateTime.now();
+
+    showSendingOverlay(context);
+    await Future.delayed(const Duration(milliseconds: 1500));
+    if (!mounted) return;
+
+    // Quita "Enviando", "Enviar a" y "Lista" y deja el comprobante sobre el Home.
+    navigator.pushAndRemoveUntil(
+      fadeRoute(SendReceiptScreen(
+        contact: widget.contact,
+        amount: amount,
+        message: message,
+        dateTime: when,
+      )),
+      (route) => route.isFirst,
     );
   }
 
