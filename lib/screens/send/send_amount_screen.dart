@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/app_text.dart';
-import '../../core/navigation.dart';
 import '../../models/app_contact.dart';
 import '../../widgets/app_message.dart';
 import '../../widgets/circle_icon_button.dart';
@@ -84,12 +83,15 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
 
     // Quita "Enviando", "Enviar a" y "Lista" y deja el comprobante sobre el Home.
     navigator.pushAndRemoveUntil(
-      fadeRoute(SendReceiptScreen(
-        contact: widget.contact,
-        amount: amount,
-        message: message,
-        dateTime: when,
-      )),
+      // Entra desde la derecha como las demás; la ✕ la cierra hacia la derecha.
+      MaterialPageRoute(
+        builder: (_) => SendReceiptScreen(
+          contact: widget.contact,
+          amount: amount,
+          message: message,
+          dateTime: when,
+        ),
+      ),
       (route) => route.isFirst,
     );
   }
