@@ -8,6 +8,10 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
    	<string>ypayone</string>
+	<key>NSCameraUsageDescription</key>
+	<string>ypayone usa la cámara para escanear códigos QR.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ypayone accede a tus fotos para leer un código QR desde una imagen.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
