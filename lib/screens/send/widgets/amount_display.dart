@@ -55,6 +55,14 @@ class _AmountDisplayState extends State<AmountDisplay>
     final text = widget.controller.text;
     final focused = widget.focusNode.hasFocus;
 
+    // Decimales que faltan, en gris: "4." → "00", "4.5" → "0".
+    String ghost = '';
+    final dot = text.indexOf('.');
+    if (dot >= 0) {
+      final missing = 2 - (text.length - dot - 1);
+      if (missing > 0) ghost = '0' * missing;
+    }
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => widget.focusNode.requestFocus(),
@@ -89,6 +97,19 @@ class _AmountDisplayState extends State<AmountDisplay>
                   height: 58,
                   margin: const EdgeInsets.only(left: 3, top: 6),
                   color: sendGrey,
+                ),
+              ),
+            if (ghost.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 3),
+                child: Text(
+                  ghost,
+                  style: appFont(
+                    fontSize: 64,
+                    fontWeight: FontWeight.w400,
+                    color: sendGrey,
+                    height: 1.05,
+                  ),
                 ),
               ),
             // Campo invisible que abre el teclado numérico con punto decimal.

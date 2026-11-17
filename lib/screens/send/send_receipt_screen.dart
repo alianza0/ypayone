@@ -34,6 +34,11 @@ class SendReceiptScreen extends StatelessWidget {
     'jul.', 'ago.', 'sept.', 'oct.', 'nov.', 'dic.',
   ];
 
+  /// Entero sin decimales ("8"); con decimales siempre dos ("4.50").
+  String get _amountText => amount == amount.roundToDouble()
+      ? amount.toStringAsFixed(0)
+      : amount.toStringAsFixed(2);
+
   String get _date =>
       '${dateTime.day} ${_months[dateTime.month - 1]} ${dateTime.year}';
 
@@ -199,7 +204,7 @@ class SendReceiptScreen extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                amount.toStringAsFixed(2),
+                _amountText,
                 style: appFont(
                   fontSize: 52,
                   fontWeight: FontWeight.w600,

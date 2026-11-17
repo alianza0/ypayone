@@ -5,6 +5,7 @@ import '../../core/app_colors.dart';
 import '../../core/app_text.dart';
 import '../../widgets/app_message.dart';
 import '../contacts/contacts_screen.dart';
+import '../qr/qr_scan_screen.dart';
 import 'widgets/category_grid.dart';
 import 'widgets/home_action_card.dart';
 import 'widgets/home_bottom_bar.dart';
@@ -31,6 +32,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Abre una pantalla entrando desde la derecha.
+  void _open(Widget screen) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -38,8 +44,8 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Scaffold(
         backgroundColor: AppColors.orange,
         bottomNavigationBar: HomeBottomBar(
-          onQr: () => _soon('Abrir QR'),
-          onLocales: () => _soon('Locales'),
+          onQr: () => _open(const QrScanScreen()),
+          onLocales: () => _open(const ContactsScreen()),
         ),
         body: SafeArea(
           bottom: false,
@@ -108,12 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               icon: Icons.list_alt_rounded,
                               label: 'Mostrar movimientos',
                               color: AppColors.purpleAction,
-                              // Provisional: abre la pantalla "Lista".
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const ContactsScreen(),
-                                ),
-                              ),
+                              onTap: () => _soon('Movimientos'),
                             ),
                           ],
                         ),
