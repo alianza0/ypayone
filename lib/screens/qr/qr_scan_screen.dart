@@ -87,11 +87,31 @@ class _QrScanScreenState extends State<QrScanScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: const Color(0xFF3A3944),
         body: Stack(
           fit: StackFit.expand,
           children: [
             MobileScanner(controller: _scanner, onDetect: _onDetect),
+            // Mientras la cámara arranca: fondo gris suave (no negro) que
+            // se desvanece apenas llega la imagen.
+            ValueListenableBuilder<MobileScannerState>(
+              valueListenable: _scanner,
+              builder: (_, state, __) => IgnorePointer(
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 250),
+                  opacity: state.isRunning ? 0 : 1,
+                  child: const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0xFF5A5866), Color(0xFF3A3944)],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
             // Marco central y texto
             Center(
               child: Column(

@@ -6,11 +6,11 @@ import '../../core/app_text.dart';
 import '../../widgets/app_message.dart';
 import '../contacts/contacts_screen.dart';
 import '../qr/qr_scan_screen.dart';
+import '../settings/settings_screen.dart';
 import 'widgets/category_grid.dart';
 import 'widgets/home_action_card.dart';
 import 'widgets/home_bottom_bar.dart';
 import 'widgets/home_top_bar.dart';
-import 'widgets/profile_sheet.dart';
 import 'widgets/promo_carousel.dart';
 
 /// Pantalla principal después de iniciar sesión.
@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             children: [
               HomeTopBar(
-                onProfile: () => showProfileSheet(context),
+                onProfile: () => _open(const SettingsScreen()),
                 onSearch: () => _soon('La búsqueda'),
                 onSupport: () => _soon('Soporte'),
                 onNotifications: () => _soon('Notificaciones'),
