@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/app_colors.dart';
 import '../../../core/app_text.dart';
 
-/// Barra inferior fija: "Abrir QR" y "Locales".
+/// Barra inferior fija: "Escanear QR" y "Yapear".
 class HomeBottomBar extends StatelessWidget {
   final VoidCallback onQr;
   final VoidCallback onLocales;
@@ -13,22 +13,19 @@ class HomeBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFEDEDED))),
-      ),
+      color: Colors.white,
       child: SafeArea(
         top: false,
         minimum: const EdgeInsets.only(bottom: 10),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: Row(
             children: [
               Expanded(
                 child: _BarButton(
-                  icon: Icons.qr_code_2_rounded,
-                  label: 'Abrir QR',
-                  color: AppColors.teal,
+                  icon: Icons.qr_code_scanner_rounded,
+                  label: 'Escanear QR',
+                  color: AppColors.yapeTeal,
                   filled: false,
                   onTap: onQr,
                 ),
@@ -36,9 +33,10 @@ class HomeBottomBar extends StatelessWidget {
               const SizedBox(width: 14),
               Expanded(
                 child: _BarButton(
-                  icon: Icons.map_rounded,
-                  label: 'Locales',
-                  color: AppColors.blue,
+                  icon: Icons.send_rounded,
+                  rotateIcon: -0.6,
+                  label: 'Yapear',
+                  color: AppColors.yapeTeal,
                   filled: true,
                   onTap: onLocales,
                 ),
@@ -53,6 +51,7 @@ class HomeBottomBar extends StatelessWidget {
 
 class _BarButton extends StatelessWidget {
   final IconData icon;
+  final double rotateIcon;
   final String label;
   final Color color;
   final bool filled;
@@ -60,6 +59,7 @@ class _BarButton extends StatelessWidget {
 
   const _BarButton({
     required this.icon,
+    this.rotateIcon = 0,
     required this.label,
     required this.color,
     required this.filled,
@@ -68,25 +68,28 @@ class _BarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(12);
+    final radius = BorderRadius.circular(10);
     final fg = filled ? Colors.white : color;
 
     return Material(
       color: filled ? color : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: radius,
-        side: filled ? BorderSide.none : BorderSide(color: color, width: 2),
+        side: filled ? BorderSide.none : BorderSide(color: color, width: 1.6),
       ),
       child: InkWell(
         borderRadius: radius,
         onTap: onTap,
         child: SizedBox(
-          height: 56,
+          height: 50,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: fg, size: 26),
-              const SizedBox(width: 10),
+              Transform.rotate(
+                angle: rotateIcon,
+                child: Icon(icon, color: fg, size: 22),
+              ),
+              const SizedBox(width: 8),
               Flexible(
                 child: Text(
                   label,
@@ -94,8 +97,8 @@ class _BarButton extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: appFont(
                     color: fg,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),

@@ -21,17 +21,17 @@ class HomeActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(18);
+    final radius = BorderRadius.circular(14);
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: radius,
-        border: Border.all(color: const Color(0xFFF0F0F0)),
+        border: Border.all(color: const Color(0xFFEEEEEE)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.07),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -41,13 +41,13 @@ class HomeActionCard extends StatelessWidget {
           borderRadius: radius,
           onTap: onTap,
           child: SizedBox(
-            height: 62,
+            height: 52,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  Icon(icon, color: color, size: 28),
-                  const SizedBox(width: 14),
+                  Icon(icon, color: color, size: 24),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       label,
@@ -55,8 +55,8 @@ class HomeActionCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: appFont(
                         color: color,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),

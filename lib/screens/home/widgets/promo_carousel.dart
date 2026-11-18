@@ -4,28 +4,83 @@ import '../../../core/app_colors.dart';
 import '../../../core/app_text.dart';
 
 class Promo {
+  final String chip;
   final String title;
   final String subtitle;
+  final String? imageAsset;
   final String emoji;
-  const Promo(this.title, this.subtitle, this.emoji);
+
+  const Promo({
+    required this.chip,
+    required this.title,
+    required this.subtitle,
+    this.imageAsset,
+    this.emoji = '📢',
+  });
 }
 
-/// Banners del carrusel. Más adelante se pueden poner fotos reales.
+/// Banners del carrusel.
+/// Para poner tus propias imágenes, coloca la ruta en `imageAsset: 'assets/...'`.
 const List<Promo> homePromos = [
-  Promo('¡SABORES QUE\nENAMORAN!', 'Pide tus favoritos hoy', '🍔'),
-  Promo('PIZZA PARA\nCOMPARTIR', '2x1 todos los martes', '🍕'),
-  Promo('CRUJIENTE\nY DORADO', 'Pollo frito al punto', '🍗'),
-  Promo('ANTOJO\nMEXICANO', 'Tacos recién hechos', '🌮'),
-  Promo('SABOR\nORIENTAL', 'Chifa a tu puerta', '🍛'),
-  Promo('FRESCO\nY RICO', 'Sushi del día', '🍣'),
-  Promo('ALGO\nDULCE', 'Postres irresistibles', '🍨'),
-  Promo('LLEGA\nRÁPIDO', 'Delivery en minutos', '🛵'),
+  Promo(
+    chip: 'Siempre Listos',
+    title: '¿HAY UNA\nEMERGENCIA\nCERCA DE TI?',
+    subtitle: 'Repórtala aquí',
+    imageAsset: null, // <-- Pon aquí tu imagen, ej: 'assets/promo1.png'
+    emoji: '🚨',
+  ),
+  Promo(
+    chip: 'Gaming',
+    title: 'Recarga 100 d...\n+ 10% BO...',
+    subtitle: 'Desde S/3.90',
+    imageAsset: null, // <-- Pon aquí tu imagen, ej: 'assets/promo2.png'
+    emoji: '🎮',
+  ),
+  Promo(
+    chip: 'Promos',
+    title: 'PIZZA PARA\nCOMPARTIR',
+    subtitle: '2x1 todos los martes',
+    imageAsset: null,
+    emoji: '🍕',
+  ),
+  Promo(
+    chip: 'Créditos',
+    title: 'CRÉDITO AL\nINSTANTE',
+    subtitle: 'Pídelo sin papeleos',
+    imageAsset: null,
+    emoji: '💸',
+  ),
+  Promo(
+    chip: 'Recargas',
+    title: 'RECARGA TU\nCELULAR HOY',
+    subtitle: 'Sin comisiones extras',
+    imageAsset: null,
+    emoji: '📱',
+  ),
+  Promo(
+    chip: 'Servicios',
+    title: 'PAGA TUS\nRECIBOS AQUÍ',
+    subtitle: 'Luz, agua e internet',
+    imageAsset: null,
+    emoji: '💡',
+  ),
+  Promo(
+    chip: 'SOAT',
+    title: 'COMPRA TU\nSOAT DIGITAL',
+    subtitle: 'En menos de 2 minutos',
+    imageAsset: null,
+    emoji: '🚗',
+  ),
+  Promo(
+    chip: 'Dólares',
+    title: 'CAMBIA TUS\nDÓLARES YA',
+    subtitle: 'Con un súper tipo de cambio',
+    imageAsset: null,
+    emoji: '💵',
+  ),
 ];
 
-/// Carrusel infinito: avanza solo cada 4 segundos, siempre hacia adelante
-/// (después del último sigue el primero, sin salto hacia atrás).
-/// El punto activo es una barrita que se va llenando con el tiempo.
-/// Si la app pasa a segundo plano, todo se detiene y luego sigue donde quedó.
+/// Carrusel infinito: mecánica original intacta.
 class PromoCarousel extends StatefulWidget {
   final ValueChanged<Promo> onTap;
 
@@ -37,10 +92,7 @@ class PromoCarousel extends StatefulWidget {
 
 class _PromoCarouselState extends State<PromoCarousel>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-  /// Tiempo que se muestra cada banner.
   static const _slideTime = Duration(seconds: 4);
-
-  /// Empieza en una página muy alta para poder deslizar hacia ambos lados.
   static final int _startPage = homePromos.length * 1000;
 
   late final PageController _controller =
@@ -78,7 +130,6 @@ class _PromoCarouselState extends State<PromoCarousel>
     super.dispose();
   }
 
-  /// Pausa al salir de la app y continúa al volver, desde el mismo punto.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _appActive = state == AppLifecycleState.resumed;
@@ -106,7 +157,6 @@ class _PromoCarouselState extends State<PromoCarousel>
 
   bool _onScroll(ScrollNotification n) {
     if (n is ScrollStartNotification && n.dragDetails != null) {
-      // El usuario está deslizando con el dedo: se pausa el tiempo.
       _dragging = true;
       _progress.stop();
     } else if (n is ScrollEndNotification && _dragging) {
@@ -121,13 +171,12 @@ class _PromoCarouselState extends State<PromoCarousel>
     return Column(
       children: [
         SizedBox(
-          height: 150,
+          height: 142,
           child: NotificationListener<ScrollNotification>(
             onNotification: _onScroll,
             child: PageView.builder(
               controller: _controller,
               padEnds: false,
-              // Sin itemCount: no tiene final.
               onPageChanged: _onPageChanged,
               itemBuilder: (_, i) {
                 final promo = homePromos[i % homePromos.length];
@@ -142,7 +191,7 @@ class _PromoCarouselState extends State<PromoCarousel>
             ),
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -155,27 +204,26 @@ class _PromoCarouselState extends State<PromoCarousel>
   }
 }
 
-/// Punto del carrusel. El activo se estira y se llena con el tiempo.
 class _Dot extends StatelessWidget {
   final bool active;
   final Animation<double> progress;
 
   const _Dot({required this.active, required this.progress});
 
-  static const double _size = 8;
-  static const double _activeWidth = 36;
+  static const double _size = 7;
+  static const double _activeWidth = 34;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOut,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 3.5),
       width: active ? _activeWidth : _size,
       height: _size,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.45),
+        color: Colors.white.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(_size / 2),
       ),
       alignment: Alignment.centerLeft,
@@ -203,32 +251,32 @@ class _PromoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
-        color: AppColors.promoBg,
+        color: Colors.white,
         child: Row(
           children: [
             Expanded(
               flex: 11,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 8, 14),
+                padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 5,
+                        horizontal: 10,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.promoChip,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        'Pide ahora',
+                        promo.chip,
                         style: appFont(
                           color: Colors.white,
-                          fontSize: 13,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -241,21 +289,22 @@ class _PromoCard extends StatelessWidget {
                         promo.title,
                         style: appFont(
                           color: AppColors.promoTitle,
-                          fontSize: 22,
+                          fontSize: 16,
                           fontWeight: FontWeight.w900,
-                          height: 1.0,
-                          letterSpacing: -0.5,
+                          height: 1.08,
+                          letterSpacing: -0.3,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 4),
                     Text(
                       promo.subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: appFont(
                         color: const Color(0xFF2B2B2B),
-                        fontSize: 13,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -263,19 +312,28 @@ class _PromoCard extends StatelessWidget {
               ),
             ),
             Expanded(
-              flex: 9,
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF6B4532), Color(0xFF2A1A12)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Center(
-                  child: Text(promo.emoji, style: const TextStyle(fontSize: 64)),
-                ),
-              ),
+              flex: 10,
+              child: promo.imageAsset != null
+                  ? Image.asset(
+                      promo.imageAsset!,
+                      fit: BoxFit.cover,
+                      height: double.infinity,
+                    )
+                  : Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF8E24AA), Color(0xFF4A148C)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          promo.emoji,
+                          style: const TextStyle(fontSize: 52),
+                        ),
+                      ),
+                    ),
             ),
           ],
         ),

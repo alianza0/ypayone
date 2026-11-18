@@ -31,22 +31,26 @@ class HomeTopBar extends StatelessWidget {
             child: GestureDetector(
               onTap: onSearch,
               child: Container(
-                height: 46,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.13),
-                  borderRadius: BorderRadius.circular(23),
+                  color: Colors.white.withValues(alpha: 0.22),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.search_rounded, color: soft, size: 24),
-                    const SizedBox(width: 10),
+                    Icon(Icons.search_rounded, color: soft, size: 22),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '¿Qué desea buscar?',
+                        'Buscar en Yape',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: appFont(color: soft, fontSize: 17),
+                        style: appFont(
+                          color: soft,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
                     ),
                   ],
@@ -55,7 +59,7 @@ class HomeTopBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          _CircleButton(icon: Icons.headset_mic_rounded, onTap: onSupport),
+          _CircleButton(icon: Icons.headset_mic_outlined, onTap: onSupport),
           const SizedBox(width: 8),
           _CircleButton(
             icon: Icons.notifications_rounded,
@@ -78,13 +82,13 @@ class _CircleButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 46,
-        height: 46,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.2),
+          color: Colors.white.withValues(alpha: 0.22),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, color: Colors.white, size: 24),
+        child: Icon(icon, color: Colors.white, size: 22),
       ),
     );
   }

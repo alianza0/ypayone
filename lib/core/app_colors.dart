@@ -16,15 +16,22 @@ class AppColors {
   static const Color hint = Color(0xFF9A9A9A);
   static const Color error = Color(0xFFD64545);
 
-  // Pantalla principal (Home)
-  static const Color orange = Color(0xFFFF6A00);
-  static const Color orangeText = Color(0xFFE8650A);
-  static const Color purpleAction = Color(0xFF6A1B9A);
+  // Pantalla principal (Home - Estilo Yape)
+  static const Color yapePurple = Color(0xFF74007B);
+  static const Color yapeDarkPurple = Color(0xFF5A0060);
+  static const Color yapeCardText = Color(0xFF6A1B7A);
+  static const Color yapeTeal = Color(0xFF00BFA5);
+  static const Color yapeYellow = Color(0xFFFFB800);
+
+  // Compatibilidad con el resto de pantallas
+  static const Color orange = yapePurple;
+  static const Color orangeText = yapeCardText;
+  static const Color purpleAction = yapeCardText;
   static const Color promoChip = Color(0xFF7B2CBF);
-  static const Color promoBg = Color(0xFFFDE7DC);
+  static const Color promoBg = Color(0xFFFFFFFF);
   static const Color promoTitle = Color(0xFF1F1F2E);
-  static const Color teal = Color(0xFF179C8E);
-  static const Color blue = Color(0xFF0B57A4);
+  static const Color teal = yapeTeal;
+  static const Color blue = yapeTeal;
 
   static const LinearGradient button = LinearGradient(
     colors: [Color(0xFF6F2A8A), primaryDark],

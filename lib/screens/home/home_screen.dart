@@ -28,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _soon([String? what]) {
     showAppMessage(
       context,
-      '${what ?? 'Esta opción'} estará disponible pronto.',
+      '${what?.replaceAll('\n', ' ') ?? 'Esta opción'} estará disponible pronto.',
       error: false,
     );
   }
@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: AppColors.orange,
+        backgroundColor: AppColors.yapePurple,
         bottomNavigationBar: HomeBottomBar(
           onQr: () => _open(const QrScanScreen()),
           onLocales: () => _open(const ContactsScreen()),
@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   slivers: [
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(8, 18, 8, 22),
+                        padding: const EdgeInsets.fromLTRB(8, 12, 8, 16),
                         child: CategoryGrid(
                           onTap: (c) => _soon(c.name),
                           onSeeAll: () => _soon('Ver todo'),
@@ -71,17 +71,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     SliverToBoxAdapter(
-                      child: PromoCarousel(onTap: (p) => _soon('Esta promo')),
+                      child: PromoCarousel(onTap: (p) => _soon(p.chip)),
                     ),
                     SliverFillRemaining(
                       hasScrollBody: false,
                       child: Container(
-                        margin: const EdgeInsets.only(top: 20),
-                        padding: const EdgeInsets.fromLTRB(16, 22, 16, 24),
+                        margin: const EdgeInsets.only(top: 16),
+                        padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
                         decoration: const BoxDecoration(
                           color: Colors.white,
                           borderRadius:
-                              BorderRadius.vertical(top: Radius.circular(28)),
+                              BorderRadius.vertical(top: Radius.circular(24)),
                         ),
                         child: Column(
                           children: [
@@ -92,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               label: _showBalance
                                   ? 'Ocultar saldo'
                                   : 'Mostrar saldo',
-                              color: AppColors.orangeText,
+                              color: AppColors.yapeCardText,
                               onTap: () =>
                                   setState(() => _showBalance = !_showBalance),
                               trailing: AnimatedSwitcher(
@@ -102,20 +102,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                         'S/ 0.00',
                                         key: const ValueKey('saldo'),
                                         style: appFont(
-                                          color: AppColors.orangeText,
-                                          fontSize: 20,
+                                          color: AppColors.yapeCardText,
+                                          fontSize: 18,
                                           fontWeight: FontWeight.w700,
                                         ),
                                       )
                                     : const SizedBox.shrink(),
                               ),
                             ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 12),
                             HomeActionCard(
-                              icon: Icons.list_alt_rounded,
+                              icon: Icons.receipt_long_rounded,
                               label: 'Mostrar movimientos',
-                              color: AppColors.purpleAction,
+                              color: AppColors.yapeCardText,
                               onTap: () => _soon('Movimientos'),
+                              trailing: const Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: Color(0xFF9E9E9E),
+                                size: 26,
+                              ),
                             ),
                           ],
                         ),
