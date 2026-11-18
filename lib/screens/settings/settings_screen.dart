@@ -104,6 +104,7 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _buildHeader(BuildContext context) {
     return SizedBox(
+      width: double.infinity,
       height: 64,
       child: Stack(
         alignment: Alignment.center,

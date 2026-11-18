@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/app_text.dart';
+import '../../core/navigation.dart';
 import '../../core/phone_utils.dart';
 import '../../data/sample_contacts.dart';
 import '../../models/app_contact.dart';
@@ -79,7 +80,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
   void _openSend(AppContact contact) {
     FocusScope.of(context).unfocus();
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => SendAmountScreen(contact: contact)),
+      slideRoute(SendAmountScreen(contact: contact)),
     );
   }
 

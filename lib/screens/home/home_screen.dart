@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/app_colors.dart';
 import '../../core/app_text.dart';
+import '../../core/navigation.dart';
 import '../../widgets/app_message.dart';
 import '../contacts/contacts_screen.dart';
 import '../qr/qr_scan_screen.dart';
@@ -34,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Abre una pantalla entrando desde la derecha.
   void _open(Widget screen) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+    Navigator.of(context).push(slideRoute(screen));
   }
 
   @override

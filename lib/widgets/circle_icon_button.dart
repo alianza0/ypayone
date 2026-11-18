@@ -40,7 +40,6 @@ class CircleIconButton extends StatelessWidget {
     if (heroTag != null) {
       button = Hero(
         tag: heroTag!,
-        transitionOnUserGestures: true,
         child: button,
       );
     }
