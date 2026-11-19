@@ -26,6 +26,21 @@ class AuthService {
   String usernameOf(User user) =>
       (user.email ?? '').split('@').first.toUpperCase();
 
+  /// Obtiene el código de vendedor desde Firestore (`users/{uid}` -> `vendorCode`).
+  Future<String?> fetchVendorCode() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    try {
+      final doc = await _db.collection('users').doc(user.uid).get();
+      final raw = doc.data()?['vendorCode'];
+      if (raw == null) return null;
+      final value = raw.toString().trim();
+      return value.isEmpty ? null : value;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> signIn(String username, String password) async {
     await _auth.signInWithEmailAndPassword(
       email: _emailFor(username),

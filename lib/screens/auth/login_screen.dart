@@ -34,6 +34,9 @@ class _LoginScreenState extends State<LoginScreen> {
     SessionService.lastUsername().then((u) {
       if (u != null && mounted) _userCtrl.text = u.toUpperCase();
     });
+    SessionService.lastPassword().then((p) {
+      if (p != null && p.isNotEmpty && mounted) _passCtrl.text = p;
+    });
   }
 
   @override
@@ -53,6 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await SessionService.saveLogin(
         remember: _remember,
         username: _userCtrl.text.trim().toUpperCase(),
+        password: _remember ? _passCtrl.text : null,
       );
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(

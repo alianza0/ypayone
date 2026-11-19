@@ -6,10 +6,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'core/app_colors.dart';
 import 'firebase_options.dart';
 import 'screens/splash/splash_screen.dart';
+import 'services/account_prefs_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await AccountPrefsService.instance.load();
   runApp(const YpayoneApp());
 }
 

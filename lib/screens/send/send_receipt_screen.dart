@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/app_colors.dart';
 import '../../core/app_text.dart';
 import '../../models/app_contact.dart';
+import '../../services/account_prefs_service.dart';
 import '../../widgets/app_message.dart';
 import 'widgets/amount_display.dart';
 
@@ -53,21 +56,56 @@ class SendReceiptScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
-      child: Scaffold(
-        backgroundColor: AppColors.orange,
-        body: SingleChildScrollView(
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-              child: Column(
-                children: [
-                  _buildBanner(context),
-                  const SizedBox(height: 10),
-                  _buildReceiptCard(context),
-                  const SizedBox(height: 16),
-                  _buildMoreCard(),
-                ],
+      child: AnimatedBuilder(
+        animation: AccountPrefsService.instance,
+        builder: (context, _) {
+          final prefs = AccountPrefsService.instance;
+
+          return Scaffold(
+            backgroundColor: AppColors.orange,
+            body: SingleChildScrollView(
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                  child: Column(
+                    children: [
+                      if (prefs.showReceiptBanner) ...[
+                        _buildBanner(context, prefs),
+                        const SizedBox(height: 10),
+                      ] else
+                        _buildTopCloseOnly(context),
+                      _buildReceiptCard(context),
+                      const SizedBox(height: 16),
+                      _buildMoreCard(),
+                    ],
+                  ),
+                ),
               ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTopCloseOnly(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.22),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.close_rounded,
+              color: Colors.white,
+              size: 26,
             ),
           ),
         ),
@@ -75,8 +113,54 @@ class SendReceiptScreen extends StatelessWidget {
     );
   }
 
-  /// Espacio para tu imagen de cabecera + botón cerrar.
-  Widget _buildBanner(BuildContext context) {
+  /// Banner superior configurable desde Mi Cuenta + botón cerrar.
+  Widget _buildBanner(BuildContext context, AccountPrefsService prefs) {
+    Widget bannerContent;
+
+    if (prefs.bannerMode == ReceiptBannerMode.custom &&
+        prefs.customBannerPath != null &&
+        prefs.customBannerPath!.isNotEmpty) {
+      bannerContent = Image.file(
+        File(prefs.customBannerPath!),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    } else if (prefs.bannerMode == ReceiptBannerMode.banner2) {
+      bannerContent = Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF005C53), Color(0xFF002B27)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          'BANNER 2 · YPAYONE',
+          style: appFont(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            color: Colors.white.withValues(alpha: 0.92),
+            letterSpacing: -0.5,
+          ),
+        ),
+      );
+    } else {
+      bannerContent = Container(
+        alignment: Alignment.center,
+        child: Text(
+          'ypayone',
+          style: appFont(
+            fontSize: 40,
+            fontWeight: FontWeight.w800,
+            color: Colors.white.withValues(alpha: 0.9),
+            letterSpacing: -1,
+          ),
+        ),
+      );
+    }
+
     return SizedBox(
       height: 170,
       child: Stack(
@@ -90,16 +174,8 @@ class SendReceiptScreen extends StatelessWidget {
                   width: 1.5,
                 ),
               ),
-              alignment: Alignment.center,
-              child: Text(
-                'ypayone',
-                style: appFont(
-                  fontSize: 40,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white.withValues(alpha: 0.9),
-                  letterSpacing: -1,
-                ),
-              ),
+              clipBehavior: Clip.antiAlias,
+              child: bannerContent,
             ),
           ),
           Positioned(
@@ -114,8 +190,11 @@ class SendReceiptScreen extends StatelessWidget {
                   color: Colors.white.withValues(alpha: 0.22),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.close_rounded,
-                    color: Colors.white, size: 26),
+                child: const Icon(
+                  Icons.close_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
               ),
             ),
           ),
@@ -170,7 +249,6 @@ class SendReceiptScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          // Distintivo fijo: este comprobante es de prueba.
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
@@ -283,7 +361,6 @@ class SendReceiptScreen extends StatelessWidget {
     );
   }
 
-  /// "Más en ShitCoin" + badge "Nuevo" + espacio para tu imagen.
   Widget _buildMoreCard() {
     return Container(
       width: double.infinity,
@@ -325,7 +402,6 @@ class SendReceiptScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // Espacio para tu imagen (la pondrás luego).
           Container(
             height: 168,
             width: double.infinity,

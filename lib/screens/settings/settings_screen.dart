@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/app_text.dart';
+import '../../core/navigation.dart';
 import '../../widgets/app_message.dart';
-import '../home/widgets/profile_sheet.dart';
+import 'account_screen.dart';
 
 /// Pantalla "Ajustes" (se abre desde el botón de perfil del inicio).
 class SettingsScreen extends StatelessWidget {
@@ -49,7 +50,9 @@ class SettingsScreen extends StatelessWidget {
                           _Item(
                             icon: Icons.person_outline_rounded,
                             label: 'Mi Cuenta',
-                            onTap: () => showProfileSheet(context),
+                            onTap: () => Navigator.of(context).push(
+                              slideRoute(const AccountScreen()),
+                            ),
                           ),
                           _Item(
                             icon: Icons.credit_card_rounded,
