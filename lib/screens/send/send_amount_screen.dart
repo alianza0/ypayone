@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/app_text.dart';
 import '../../core/navigation.dart';
 import '../../models/app_contact.dart';
+import '../../services/account_prefs_service.dart';
 import '../../widgets/app_message.dart';
 import '../../widgets/circle_icon_button.dart';
 import '../../widgets/skeleton_box.dart';
@@ -79,6 +80,8 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
     final when = DateTime.now();
 
     showSendingOverlay(context);
+    final currentBalance = AccountPrefsService.instance.balance;
+    await AccountPrefsService.instance.setBalance(currentBalance - amount);
     await Future.delayed(const Duration(milliseconds: 1500));
     if (!mounted) return;
 

@@ -69,14 +69,13 @@ class SendReceiptScreen extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                   child: Column(
                     children: [
-                      if (prefs.showReceiptBanner) ...[
-                        _buildBanner(context, prefs),
-                        const SizedBox(height: 10),
-                      ] else
-                        _buildTopCloseOnly(context),
+                      _buildBanner(context, prefs),
+                      const SizedBox(height: 10),
                       _buildReceiptCard(context),
-                      const SizedBox(height: 16),
-                      _buildMoreCard(),
+                      if (prefs.showReceiptBanner) ...[
+                        const SizedBox(height: 16),
+                        _buildMoreCard(),
+                      ],
                     ],
                   ),
                 ),
@@ -84,31 +83,6 @@ class SendReceiptScreen extends StatelessWidget {
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildTopCloseOnly(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
-          child: Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.22),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.close_rounded,
-              color: Colors.white,
-              size: 26,
-            ),
-          ),
-        ),
       ),
     );
   }
