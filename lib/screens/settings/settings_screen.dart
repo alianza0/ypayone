@@ -5,6 +5,7 @@ import '../../core/app_text.dart';
 import '../../core/navigation.dart';
 import '../../widgets/app_message.dart';
 import 'account_screen.dart';
+import 'autocompletado_beta_screen.dart';
 
 /// Pantalla "Ajustes" (se abre desde el botón de perfil del inicio).
 class SettingsScreen extends StatelessWidget {
@@ -57,7 +58,13 @@ class SettingsScreen extends StatelessWidget {
                           _Item(
                             icon: Icons.credit_card_rounded,
                             label: 'Auto-completado (BETA)',
-                            onTap: () => _soon(context, 'Auto-completado'),
+                            onTap: () => Navigator.of(context).push(
+                              slideRoute(
+                                const AutocompletadoBetaScreen(
+                                  initialServerUrl: 'http://192.168.0.104:3000',
+                                ),
+                              ),
+                            ),
                           ),
                         ]),
                         const SizedBox(height: 15),
