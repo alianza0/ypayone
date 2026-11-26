@@ -13,6 +13,7 @@ import '../../services/account_prefs_service.dart';
 import '../../widgets/app_message.dart';
 import '../../widgets/circle_icon_button.dart';
 import '../../widgets/skeleton_box.dart';
+import '../settings/cuentas_vinculadas_screen.dart';
 import 'send_receipt_screen.dart';
 import 'widgets/amount_display.dart';
 import 'widgets/sending_overlay.dart';
@@ -108,27 +109,48 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   Future<void> _consultarTitularEnServidor() async {
     final numero = _numeroLimpio;
     if (numero.length == 9) {
-      final data = await _llamarBuscarContacto(
-        numero: numero,
-        bancoForzado: null,
+      final cuentas = await CuentasVinculadasStorage.obtenerCuentas();
+      final activaId = await CuentasVinculadasStorage.obtenerCuentaActivaId();
+      final cuentaActiva = cuentas.where((c) => c.id == activaId).firstOrNull ??
+          (cuentas.isNotEmpty ? cuentas.first : null);
+
+      final tieneCupo = await LimiteBusquedasStorage.consumirBusquedaHoy(
+        cuentaActiva?.dni,
       );
+
       if (!mounted) return;
 
-      final success = data?['success'] == true;
-      final nombreRaw = data?['nombre']?.toString().trim() ?? '';
-
-      if (success &&
-          nombreRaw.isNotEmpty &&
-          nombreRaw.toLowerCase() != 'no leído') {
-        _displayedTitle = nombreRaw;
-        _sinYape = false;
-        _otrasEntidades = [];
-      } else {
+      if (!tieneCupo) {
         _displayedTitle = _formatearCelular(numero);
         _sinYape = true;
-        final rawEnt = data?['entidades'];
-        if (rawEnt is List) {
-          _otrasEntidades = rawEnt.map((e) => e.toString()).toList();
+        showAppMessage(
+          context,
+          'Límite de ${LimiteBusquedasStorage.limiteDiario}/${LimiteBusquedasStorage.limiteDiario} búsquedas alcanzado hoy para este DNI. Se reinicia a las 00:00.',
+          error: true,
+        );
+      } else {
+        final data = await _llamarBuscarContacto(
+          numero: numero,
+          bancoForzado: null,
+        );
+        if (!mounted) return;
+
+        final success = data?['success'] == true;
+        final nombreRaw = data?['nombre']?.toString().trim() ?? '';
+
+        if (success &&
+            nombreRaw.isNotEmpty &&
+            nombreRaw.toLowerCase() != 'no leído') {
+          _displayedTitle = nombreRaw;
+          _sinYape = false;
+          _otrasEntidades = [];
+        } else {
+          _displayedTitle = _formatearCelular(numero);
+          _sinYape = true;
+          final rawEnt = data?['entidades'];
+          if (rawEnt is List) {
+            _otrasEntidades = rawEnt.map((e) => e.toString()).toList();
+          }
         }
       }
     }

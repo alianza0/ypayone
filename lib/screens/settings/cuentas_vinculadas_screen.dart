@@ -89,6 +89,87 @@ class CuentasVinculadasStorage {
   }
 }
 
+/// Controla el límite de 12 búsquedas por día por DNI, reiniciando tras las 00:00.
+class LimiteBusquedasStorage {
+  static const int limiteDiario = 12;
+  static const String _keyBusquedasPorDni = 'ypayone_busquedas_dni_v1';
+
+  static String _claveFechaHoy() {
+    final now = DateTime.now();
+    final y = now.year.toString().padLeft(4, '0');
+    final m = now.month.toString().padLeft(2, '0');
+    final d = now.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  static Future<Map<String, dynamic>> _leerMapa() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_keyBusquedasPorDni);
+    if (raw == null || raw.isEmpty) return {};
+    try {
+      return Map<String, dynamic>.from(jsonDecode(raw) as Map);
+    } catch (_) {
+      return {};
+    }
+  }
+
+  static Future<void> _guardarMapa(Map<String, dynamic> mapa) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyBusquedasPorDni, jsonEncode(mapa));
+  }
+
+  static Future<int> obtenerUsadasHoy(String? dni) async {
+    final dniLimpio = (dni ?? '').replaceAll(RegExp(r'\D'), '');
+    if (dniLimpio.isEmpty) return 0;
+
+    final hoy = _claveFechaHoy();
+    final mapa = await _leerMapa();
+    final registro = mapa[dniLimpio];
+    if (registro is Map) {
+      final fecha = registro['fecha']?.toString() ?? '';
+      if (fecha == hoy) {
+        final usadas = (registro['usadas'] as num?)?.toInt() ?? 0;
+        return usadas.clamp(0, limiteDiario);
+      }
+    }
+    return 0;
+  }
+
+  static Future<int> obtenerRestantesHoy(String? dni) async {
+    final usadas = await obtenerUsadasHoy(dni);
+    return (limiteDiario - usadas).clamp(0, limiteDiario);
+  }
+
+  /// Intenta consumir 1 búsqueda para [dni].
+  /// Retorna `true` si había cupo disponible (< 12), o `false` si ya alcanzó 12 / 12 hoy.
+  static Future<bool> consumirBusquedaHoy(String? dni) async {
+    final dniLimpio = (dni ?? '').replaceAll(RegExp(r'\D'), '');
+    if (dniLimpio.isEmpty) return true;
+
+    final hoy = _claveFechaHoy();
+    final mapa = await _leerMapa();
+    int usadasHoy = 0;
+
+    final registro = mapa[dniLimpio];
+    if (registro is Map && (registro['fecha']?.toString() ?? '') == hoy) {
+      usadasHoy = (registro['usadas'] as num?)?.toInt() ?? 0;
+    }
+
+    if (usadasHoy >= limiteDiario) {
+      mapa[dniLimpio] = {'fecha': hoy, 'usadas': limiteDiario};
+      await _guardarMapa(mapa);
+      return false;
+    }
+
+    mapa[dniLimpio] = {
+      'fecha': hoy,
+      'usadas': (usadasHoy + 1).clamp(0, limiteDiario),
+    };
+    await _guardarMapa(mapa);
+    return true;
+  }
+}
+
 class CuentasVinculadasScreen extends StatefulWidget {
   final String? cuentaSeleccionadaId;
 
@@ -114,6 +195,7 @@ class _CuentasVinculadasScreenState extends State<CuentasVinculadasScreen> {
   final _claveController = TextEditingController();
 
   List<CuentaVinculadaModel> _cuentas = [];
+  Map<String, int> _usadasPorDni = {};
   String? _activaId;
   bool _ocultarClave = true;
   bool _cargando = true;
@@ -136,9 +218,16 @@ class _CuentasVinculadasScreenState extends State<CuentasVinculadasScreen> {
     final cuentas = await CuentasVinculadasStorage.obtenerCuentas();
     final activa = widget.cuentaSeleccionadaId ??
         await CuentasVinculadasStorage.obtenerCuentaActivaId();
+
+    final mapaUsadas = <String, int>{};
+    for (final c in cuentas) {
+      mapaUsadas[c.dni] = await LimiteBusquedasStorage.obtenerUsadasHoy(c.dni);
+    }
+
     if (!mounted) return;
     setState(() {
       _cuentas = cuentas;
+      _usadasPorDni = mapaUsadas;
       _activaId = activa;
       _cargando = false;
     });
@@ -175,6 +264,8 @@ class _CuentasVinculadasScreenState extends State<CuentasVinculadasScreen> {
     await CuentasVinculadasStorage.guardarCuentas(actualizadas);
     await CuentasVinculadasStorage.establecerCuentaActivaId(nueva.id);
 
+    final usadasNueva = await LimiteBusquedasStorage.obtenerUsadasHoy(dni);
+
     _aliasController.clear();
     _dniController.clear();
     _claveController.clear();
@@ -182,6 +273,7 @@ class _CuentasVinculadasScreenState extends State<CuentasVinculadasScreen> {
 
     setState(() {
       _cuentas = actualizadas;
+      _usadasPorDni[dni] = usadasNueva;
       _activaId = nueva.id;
     });
 
@@ -236,7 +328,7 @@ class _CuentasVinculadasScreenState extends State<CuentasVinculadasScreen> {
           child: SafeArea(
             child: Column(
               children: [
-                _buildTopClose(context),
+                _buildTopBack(context),
                 Expanded(
                   child: _cargando
                       ? const Center(
@@ -292,6 +384,8 @@ class _CuentasVinculadasScreenState extends State<CuentasVinculadasScreen> {
                                             final cuenta = _cuentas[index];
                                             final esActiva =
                                                 cuenta.id == _activaId;
+                                            final usadas =
+                                                _usadasPorDni[cuenta.dni] ?? 0;
                                             return Column(
                                               children: [
                                                 InkWell(
@@ -347,17 +441,21 @@ class _CuentasVinculadasScreenState extends State<CuentasVinculadasScreen> {
                                                             children: [
                                                               Row(
                                                                 children: [
-                                                                  Text(
-                                                                    cuenta
-                                                                        .alias,
-                                                                    style: appFont(
-                                                                      fontSize:
-                                                                          15.5,
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w600,
-                                                                      color:
-                                                                          _textDark,
+                                                                  Flexible(
+                                                                    child: Text(
+                                                                      cuenta
+                                                                          .alias,
+                                                                      overflow:
+                                                                          TextOverflow
+                                                                              .ellipsis,
+                                                                      style: appFont(
+                                                                        fontSize:
+                                                                            15.5,
+                                                                        fontWeight:
+                                                                            FontWeight.w600,
+                                                                        color:
+                                                                            _textDark,
+                                                                      ),
                                                                     ),
                                                                   ),
                                                                   if (esActiva) ...[
@@ -397,8 +495,7 @@ class _CuentasVinculadasScreenState extends State<CuentasVinculadasScreen> {
                                                               const SizedBox(
                                                                   height: 2),
                                                               Text(
-                                                                cuenta
-                                                                    .dniEnmascarado,
+                                                                '${cuenta.dniEnmascarado} · $usadas/${LimiteBusquedasStorage.limiteDiario}',
                                                                 style: appFont(
                                                                   fontSize: 13,
                                                                   color: _muted,
@@ -565,7 +662,7 @@ class _CuentasVinculadasScreenState extends State<CuentasVinculadasScreen> {
     );
   }
 
-  Widget _buildTopClose(BuildContext context) {
+  Widget _buildTopBack(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
       child: Align(
@@ -591,7 +688,7 @@ class _CuentasVinculadasScreenState extends State<CuentasVinculadasScreen> {
               ],
             ),
             child: const Icon(
-              Icons.close_rounded,
+              Icons.arrow_back_rounded,
               color: _textDark,
               size: 21,
             ),

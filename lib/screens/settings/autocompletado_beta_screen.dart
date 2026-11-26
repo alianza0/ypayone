@@ -48,6 +48,8 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
   bool _ocupado = false;
   bool _enviandoCaptcha = false;
 
+  int _busquedasUsadasHoy = 0;
+
   String _mensajeEstado = 'Listo para iniciar sesión.';
   bool _esError = false;
 
@@ -80,6 +82,7 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
       if (_sesionExpiraEnMs != null) {
         _actualizarRelojVisual();
       }
+      _refrescarLimiteDni();
       _consultarEstadoSesion();
     }
   }
@@ -88,6 +91,17 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
     var url = _serverUrlController.text.trim();
     if (url.endsWith('/')) url = url.substring(0, url.length - 1);
     return url;
+  }
+
+  int get _limiteDiario => LimiteBusquedasStorage.limiteDiario;
+  int get _intentosRestantes => (_limiteDiario - _busquedasUsadasHoy).clamp(0, _limiteDiario);
+  bool get _limiteAgotado => _busquedasUsadasHoy >= _limiteDiario;
+
+  Future<void> _refrescarLimiteDni() async {
+    final usadas =
+        await LimiteBusquedasStorage.obtenerUsadasHoy(_cuentaActiva?.dni);
+    if (!mounted) return;
+    setState(() => _busquedasUsadasHoy = usadas);
   }
 
   Future<void> _inicializar() async {
@@ -111,8 +125,13 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
           cuentas.first;
     }
 
+    final usadas = await LimiteBusquedasStorage.obtenerUsadasHoy(encontrada?.dni);
+
     if (!mounted) return;
-    setState(() => _cuentaActiva = encontrada);
+    setState(() {
+      _cuentaActiva = encontrada;
+      _busquedasUsadasHoy = usadas;
+    });
 
     await _consultarEstadoSesion();
   }
@@ -195,11 +214,15 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
 
     final cuentas = await CuentasVinculadasStorage.obtenerCuentas();
     final activaId = await CuentasVinculadasStorage.obtenerCuentaActivaId();
+    final elegida = resultado ??
+        cuentas.where((c) => c.id == activaId).firstOrNull ??
+        (cuentas.isNotEmpty ? cuentas.first : null);
+    final usadas = await LimiteBusquedasStorage.obtenerUsadasHoy(elegida?.dni);
+
     if (!mounted) return;
     setState(() {
-      _cuentaActiva = resultado ??
-          cuentas.where((c) => c.id == activaId).firstOrNull ??
-          (cuentas.isNotEmpty ? cuentas.first : null);
+      _cuentaActiva = elegida;
+      _busquedasUsadasHoy = usadas;
     });
   }
 
@@ -496,7 +519,7 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
           child: SafeArea(
             child: Column(
               children: [
-                _buildTopClose(context),
+                _buildTopBack(context),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(18, 4, 18, 28),
@@ -600,6 +623,59 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
                                           ),
                                         ),
                                       ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _dividerLine(),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  18,
+                                  14,
+                                  18,
+                                  14,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Búsquedas hoy',
+                                          style: appFont(
+                                            fontSize: 15.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: _textDark,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          _cuentaActiva == null
+                                              ? 'Sin DNI vinculado'
+                                              : _limiteAgotado
+                                                  ? 'Límite agotado · Reinicia 00:00'
+                                                  : 'Te quedan $_intentosRestantes intentos hoy',
+                                          style: appFont(
+                                            fontSize: 12.5,
+                                            color: _limiteAgotado
+                                                ? _red
+                                                : _muted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Text(
+                                      '$_busquedasUsadasHoy / $_limiteDiario',
+                                      style: appFont(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                        color: _limiteAgotado
+                                            ? _red
+                                            : _purple,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -1069,7 +1145,7 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
     );
   }
 
-  Widget _buildTopClose(BuildContext context) {
+  Widget _buildTopBack(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
       child: Align(
@@ -1091,7 +1167,7 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
               ],
             ),
             child: const Icon(
-              Icons.close_rounded,
+              Icons.arrow_back_rounded,
               color: _textDark,
               size: 21,
             ),
