@@ -163,7 +163,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
     });
   }
 
-  AppContact get _contactoActual => widget.contact;
+  AppContact get _contactoActual => AppContact(_displayedTitle, widget.contact.phone);
 
   @override
   void dispose() {
