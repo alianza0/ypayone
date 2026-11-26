@@ -1,9 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../core/app_text.dart';
+import '../../core/navigation.dart';
+import '../../widgets/app_message.dart';
 import 'cuentas_vinculadas_screen.dart';
 
 class AutocompletadoBetaScreen extends StatefulWidget {
@@ -21,8 +27,17 @@ class AutocompletadoBetaScreen extends StatefulWidget {
 
 class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
     with WidgetsBindingObserver {
-  static const String _keyServerUrl = 'ypayone_server_url_v1';
-  static const String _keyVelocidad = 'ypayone_velocidad_v1';
+  static const _keyServerUrl = 'ypayone_server_url_v1';
+  static const _keyVelocidad = 'ypayone_velocidad_v1';
+
+  static const _textDark = Color(0xFF1F1D2B);
+  static const _sectionLabel = Color(0xFF757285);
+  static const _muted = Color(0xFF8C899B);
+  static const _divider = Color(0xFFF0EEF5);
+  static const _purple = Color(0xFF6A1B7A);
+  static const _green = Color(0xFF28A745);
+  static const _red = Color(0xFFE5383B);
+  static const _redBg = Color(0xFFFCDDE0);
 
   final _captchaController = TextEditingController();
   final _serverUrlController = TextEditingController();
@@ -33,7 +48,7 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
   bool _ocupado = false;
   bool _enviandoCaptcha = false;
 
-  String _mensajeEstado = 'Listo para iniciar sesión';
+  String _mensajeEstado = 'Listo para iniciar sesión.';
   bool _esError = false;
 
   String? _captchaBase64;
@@ -59,7 +74,6 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
     super.dispose();
   }
 
-  // Sincroniza al instante si la app vuelve de segundo plano en iOS
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -98,9 +112,7 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
     }
 
     if (!mounted) return;
-    setState(() {
-      _cuentaActiva = encontrada;
-    });
+    setState(() => _cuentaActiva = encontrada);
 
     await _consultarEstadoSesion();
   }
@@ -117,7 +129,7 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
           if (!mounted) return;
           setState(() {
             _sesionOnline = true;
-            _mensajeEstado = 'Sesión activa en curso';
+            _mensajeEstado = 'Sesión activa en curso.';
             _esError = false;
           });
         } else if (_sesionOnline) {
@@ -125,14 +137,12 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
           if (!mounted) return;
           setState(() {
             _sesionOnline = false;
-            _mensajeEstado = 'Sesión finalizada o desconectada';
+            _mensajeEstado = 'Sesión finalizada o desconectada.';
             _esError = false;
           });
         }
       }
-    } catch (_) {
-      // Silencioso al verificar en segundo plano
-    }
+    } catch (_) {}
   }
 
   void _iniciarContadorVisual(int expiraEnMs) {
@@ -168,17 +178,16 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
       _detenerContadorVisual();
       setState(() {
         _sesionOnline = false;
-        _mensajeEstado = 'Sesión finalizada (13 min cumplidos)';
+        _mensajeEstado = 'Sesión finalizada (13 min cumplidos).';
         _esError = true;
       });
     }
   }
 
   Future<void> _abrirCuentasVinculadas() async {
-    final resultado = await Navigator.push<CuentaVinculadaModel?>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CuentasVinculadasScreen(
+    final resultado = await Navigator.of(context).push<CuentaVinculadaModel?>(
+      slideRoute(
+        CuentasVinculadasScreen(
           cuentaSeleccionadaId: _cuentaActiva?.id,
         ),
       ),
@@ -196,10 +205,11 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
 
   Future<void> _iniciarFlujo() async {
     if (_cuentaActiva == null) {
-      setState(() {
-        _mensajeEstado = 'Vincula una cuenta guardada antes de iniciar';
-        _esError = true;
-      });
+      showAppMessage(
+        context,
+        'Primero vincula o selecciona una cuenta guardada.',
+        error: true,
+      );
       await _abrirCuentasVinculadas();
       return;
     }
@@ -232,25 +242,25 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
           _captchaController.clear();
           setState(() {
             _captchaBase64 = data['captchaBase64'];
-            _mensajeEstado = 'Ingresa el código Captcha para continuar';
+            _mensajeEstado = 'Ingresa el código Captcha para continuar.';
             _esError = false;
           });
         } else {
           setState(() {
-            _mensajeEstado = 'DNI ingresado, pero no se capturó el Captcha';
+            _mensajeEstado = 'DNI ingresado, pero no se capturó el Captcha.';
             _esError = true;
           });
         }
       } else {
         setState(() {
-          _mensajeEstado = data['error'] ?? 'Error al iniciar sesión';
+          _mensajeEstado = data['error'] ?? 'Error al iniciar sesión.';
           _esError = true;
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
-        _mensajeEstado = 'Conexión con el servidor perdida';
+        _mensajeEstado = 'Conexión con el servidor perdida.';
         _esError = true;
       });
     } finally {
@@ -284,14 +294,14 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
           _captchaController.clear();
         }
         _mensajeEstado = data['ok'] == true
-            ? (data['mensaje'] ?? 'Nuevo Captcha listo')
-            : (data['error'] ?? 'No se pudo cambiar el Captcha');
+            ? (data['mensaje'] ?? 'Nuevo Captcha listo.')
+            : (data['error'] ?? 'No se pudo cambiar el Captcha.');
         _esError = data['ok'] != true;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _mensajeEstado = 'Error al solicitar nuevo Captcha';
+        _mensajeEstado = 'Error al solicitar nuevo Captcha.';
         _esError = true;
       });
     } finally {
@@ -303,10 +313,7 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
     if (_enviandoCaptcha) return;
     final codigo = _captchaController.text.trim();
     if (codigo.isEmpty) {
-      setState(() {
-        _mensajeEstado = 'Escribe el código de la imagen Captcha';
-        _esError = true;
-      });
+      showAppMessage(context, 'Escribe el código de la imagen Captcha.', error: true);
       return;
     }
 
@@ -332,7 +339,7 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
         setState(() {
           _sesionOnline = true;
           _captchaBase64 = null;
-          _mensajeEstado = data['mensaje'] ?? 'Sesión iniciada correctamente';
+          _mensajeEstado = data['mensaje'] ?? 'Sesión iniciada correctamente.';
           _esError = false;
         });
         if (data['expiraEn'] != null) {
@@ -340,7 +347,7 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
         }
       } else {
         setState(() {
-          _mensajeEstado = data['error'] ?? 'Captcha incorrecto';
+          _mensajeEstado = data['error'] ?? 'Captcha incorrecto.';
           _esError = true;
           if (data['nuevoCaptcha'] != null) {
             _captchaBase64 = data['nuevoCaptcha'];
@@ -351,7 +358,7 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _mensajeEstado = 'Error de conexión al validar Captcha';
+        _mensajeEstado = 'Error de conexión al validar Captcha.';
         _esError = true;
       });
     } finally {
@@ -375,9 +382,7 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
       setState(() {
         _sesionOnline = false;
         _captchaBase64 = null;
-        _mensajeEstado = res.statusCode == 200
-            ? res.body
-            : 'Navegador cerrado';
+        _mensajeEstado = res.statusCode == 200 ? res.body : 'Navegador cerrado.';
         _esError = false;
       });
     } catch (_) {
@@ -386,7 +391,7 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
       setState(() {
         _sesionOnline = false;
         _captchaBase64 = null;
-        _mensajeEstado = 'Conexión con el servidor perdida';
+        _mensajeEstado = 'Conexión con el servidor perdida.';
         _esError = true;
       });
     } finally {
@@ -400,29 +405,51 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Dirección del Servidor',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Dirección del servidor',
+          style: appFont(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: _textDark,
+          ),
+        ),
         content: TextField(
           controller: tempCtrl,
-          decoration: const InputDecoration(
+          style: appFont(fontSize: 15, color: _textDark),
+          decoration: InputDecoration(
             hintText: 'http://192.168.0.104:3000',
-            border: OutlineInputBorder(),
+            hintStyle: appFont(fontSize: 14, color: _muted),
+            filled: true,
+            fillColor: const Color(0xFFF4F2FA),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar',
-                style: TextStyle(color: Color(0xFF68707A))),
+            child: Text(
+              'Cancelar',
+              style: appFont(color: _muted, fontWeight: FontWeight.w600),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF28A745),
+              backgroundColor: _purple,
               foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () => Navigator.pop(ctx, tempCtrl.text.trim()),
-            child: const Text('Guardar'),
+            child: Text(
+              'Guardar',
+              style: appFont(fontWeight: FontWeight.w700, color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -450,531 +477,654 @@ class _AutocompletadoBetaScreenState extends State<AutocompletadoBetaScreen>
     final bytesCaptcha =
         _captchaBase64 != null ? _decodificarBase64(_captchaBase64!) : null;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F8FA),
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: CircleAvatar(
-            backgroundColor: const Color(0xFFECEEF2),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back,
-                  color: Color(0xFF1A1D21), size: 20),
-              onPressed: () => Navigator.pop(context),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF4F2FA),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFF1F0FA),
+                Color(0xFFF8F0F8),
+                Color(0xFFF0F4FB),
+              ],
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildTopClose(context),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(18, 4, 18, 28),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Auto-completado',
+                              style: appFont(
+                                fontSize: 30,
+                                fontWeight: FontWeight.w800,
+                                color: _textDark,
+                                letterSpacing: -0.6,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _purple.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                'BETA',
+                                style: appFont(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: _purple,
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Activa y controla tu sesión vinculada.',
+                          style: appFont(fontSize: 15, color: _muted),
+                        ),
+                        const SizedBox(height: 22),
+
+                        Text(
+                          'MONITOR DE ESTADO',
+                          style: appFont(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: _sectionLabel,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _cardContainer(
+                          child: Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  18,
+                                  15,
+                                  18,
+                                  15,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Estado de sesión',
+                                      style: appFont(
+                                        fontSize: 15.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: _textDark,
+                                      ),
+                                    ),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          _sesionOnline ? 'ONLINE' : 'OFFLINE',
+                                          style: appFont(
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.w800,
+                                            color: _sesionOnline
+                                                ? _green
+                                                : _muted,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          width: 9,
+                                          height: 9,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: _sesionOnline
+                                                ? _green
+                                                : _muted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _dividerLine(),
+                              Padding(
+                                padding: const EdgeInsets.all(14),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _esError
+                                        ? _redBg
+                                        : const Color(0xFFF4F2FA),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Text(
+                                    _mensajeEstado,
+                                    style: appFont(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: _esError ? _red : _textDark,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (_sesionExpiraEnMs != null) ...[
+                                _dividerLine(),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    18,
+                                    14,
+                                    18,
+                                    16,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Tiempo restante',
+                                        style: appFont(
+                                          fontSize: 15.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: _textDark,
+                                        ),
+                                      ),
+                                      Text(
+                                        _tiempoRestanteTexto,
+                                        style: appFont(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          color: _menosDeUnMinuto
+                                              ? _red
+                                              : _purple,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SizedBox(
+                                height: 48,
+                                child: ElevatedButton(
+                                  onPressed: _ocupado ? null : _iniciarFlujo,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _green,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Iniciar sesión',
+                                    style: appFont(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: SizedBox(
+                                height: 48,
+                                child: OutlinedButton(
+                                  onPressed: _ocupado ? null : _detenerSistema,
+                                  style: OutlinedButton.styleFrom(
+                                    backgroundColor:
+                                        Colors.white.withValues(alpha: 0.92),
+                                    foregroundColor: _textDark,
+                                    side: const BorderSide(
+                                      color: Color(0xFFE6E2F0),
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Detener',
+                                    style: appFont(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: _textDark,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        if (_captchaBase64 != null) ...[
+                          const SizedBox(height: 22),
+                          Text(
+                            'VERIFICACIÓN CAPTCHA',
+                            style: appFont(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: _sectionLabel,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _cardContainer(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Código de seguridad',
+                                        style: appFont(
+                                          fontSize: 15.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: _textDark,
+                                        ),
+                                      ),
+                                      TextButton.icon(
+                                        onPressed: _enviandoCaptcha
+                                            ? null
+                                            : _cambiarCaptcha,
+                                        icon: const Icon(
+                                          Icons.refresh_rounded,
+                                          size: 18,
+                                          color: _purple,
+                                        ),
+                                        label: Text(
+                                          'Cambiar',
+                                          style: appFont(
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: _purple,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (bytesCaptcha != null) ...[
+                                    const SizedBox(height: 8),
+                                    Center(
+                                      child: Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF4F2FA),
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                        ),
+                                        child: Image.memory(
+                                          bytesCaptcha,
+                                          height: 60,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 12),
+                                  TextField(
+                                    controller: _captchaController,
+                                    enabled: !_enviandoCaptcha,
+                                    maxLength: 6,
+                                    textAlign: TextAlign.center,
+                                    style: appFont(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: _textDark,
+                                      letterSpacing: 3,
+                                    ),
+                                    decoration: InputDecoration(
+                                      counterText: '',
+                                      hintText: 'Escribe el código aquí',
+                                      hintStyle: appFont(
+                                        fontSize: 14,
+                                        color: _muted,
+                                      ),
+                                      filled: true,
+                                      fillColor: const Color(0xFFF4F2FA),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                    onSubmitted: (_) => _enviarCaptcha(),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 46,
+                                    child: ElevatedButton(
+                                      onPressed: _enviandoCaptcha
+                                          ? null
+                                          : _enviarCaptcha,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: _purple,
+                                        foregroundColor: Colors.white,
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        _enviandoCaptcha
+                                            ? 'Validando...'
+                                            : 'Confirmar y autocompletar clave',
+                                        style: appFont(
+                                          fontSize: 14.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 22),
+
+                        Text(
+                          'CUENTAS VINCULADAS',
+                          style: appFont(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: _sectionLabel,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _cardContainer(
+                          child: InkWell(
+                            onTap: _abrirCuentasVinculadas,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 14,
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: _purple.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      _cuentaActiva?.iniciales ?? '+',
+                                      style: appFont(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        color: _purple,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _cuentaActiva?.alias ??
+                                              'Vincular cuenta guardada',
+                                          style: appFont(
+                                            fontSize: 15.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: _textDark,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          _cuentaActiva?.dniEnmascarado ??
+                                              'Toca para guardar DNI y clave',
+                                          style: appFont(
+                                            fontSize: 13,
+                                            color: _muted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.chevron_right_rounded,
+                                    color: _muted,
+                                    size: 22,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 22),
+
+                        Text(
+                          'AJUSTES DE OPERACIÓN',
+                          style: appFont(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: _sectionLabel,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _cardContainer(
+                          child: Column(
+                            children: [
+                              InkWell(
+                                onTap: _editarUrlServidor,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 15,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Servidor',
+                                        style: appFont(
+                                          fontSize: 15.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: _textDark,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Flexible(
+                                        child: Text(
+                                          _serverUrlController.text,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: appFont(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                            color: _muted,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              _dividerLine(),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 10,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Velocidad',
+                                      style: appFont(
+                                        fontSize: 15.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: _textDark,
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF4F2FA),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: DropdownButtonHideUnderline(
+                                        child: DropdownButton<String>(
+                                          value: _velocidad,
+                                          isDense: true,
+                                          dropdownColor: Colors.white,
+                                          style: appFont(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: _purple,
+                                          ),
+                                          items: const [
+                                            DropdownMenuItem(
+                                              value: 'TURBO',
+                                              child: Text('Turbo'),
+                                            ),
+                                            DropdownMenuItem(
+                                              value: 'NORMAL',
+                                              child: Text('Normal'),
+                                            ),
+                                            DropdownMenuItem(
+                                              value: 'LENTO',
+                                              child: Text('Lento'),
+                                            ),
+                                          ],
+                                          onChanged: (val) async {
+                                            if (val == null) return;
+                                            final prefs =
+                                                await SharedPreferences
+                                                    .getInstance();
+                                            await prefs.setString(
+                                              _keyVelocidad,
+                                              val,
+                                            );
+                                            setState(() => _velocidad = val);
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // TÍTULO PRINCIPAL
-            Row(
-              children: [
-                const Text(
-                  'Autocompletado',
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF14171A),
-                    letterSpacing: -0.6,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFECEEF2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'BETA',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF68707A),
-                      letterSpacing: 0.5,
-                    ),
-                  ),
+    );
+  }
+
+  Widget _buildTopClose(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: GestureDetector(
+          onTap: () => Navigator.of(context).maybePop(),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF2A2540).withValues(alpha: 0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
-
-            const SizedBox(height: 22),
-
-            // MONITOR DE ESTADO
-            const Text(
-              'MONITOR DE ESTADO',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF88909A),
-                letterSpacing: 0.8,
-              ),
+            child: const Icon(
+              Icons.close_rounded,
+              color: _textDark,
+              size: 21,
             ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Estado',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF14171A),
-                  ),
-                ),
-                Row(
-                  children: [
-                    Text(
-                      _sesionOnline ? 'ONLINE' : 'OFFLINE',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: _sesionOnline
-                            ? const Color(0xFF28A745)
-                            : const Color(0xFF88909A),
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _sesionOnline
-                            ? const Color(0xFF28A745)
-                            : const Color(0xFF88909A),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // CAJA DE LOG / ESTADO
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-              decoration: BoxDecoration(
-                color: _esError
-                    ? const Color(0xFFFDECEC)
-                    : const Color(0xFFECEEF2),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                _mensajeEstado,
-                style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: _esError
-                      ? const Color(0xFFC62828)
-                      : const Color(0xFF3C4043),
-                ),
-              ),
-            ),
-
-            // CONTADOR DE 13 MINUTOS (CUANDO ESTÁ ONLINE)
-            if (_sesionExpiraEnMs != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _menosDeUnMinuto
-                        ? const Color(0xFFDC3545)
-                        : const Color(0xFF28A745),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Tiempo restante de sesión',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A5058),
-                      ),
-                    ),
-                    Text(
-                      _tiempoRestanteTexto,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.5,
-                        color: _menosDeUnMinuto
-                            ? const Color(0xFFDC3545)
-                            : const Color(0xFF28A745),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 16),
-
-            // BOTONES INICIAR / DETENER
-            Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: _ocupado ? null : _iniciarFlujo,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF28A745),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Iniciar Sesión',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: SizedBox(
-                    height: 48,
-                    child: OutlinedButton(
-                      onPressed: _ocupado ? null : _detenerSistema,
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: const Color(0xFF4A5058),
-                        side: const BorderSide(color: Color(0xFFDADCE0)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Detener',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            // PASO 2: BLOQUE DE CAPTCHA (CUANDO EL SERVIDOR LO ENVÍA)
-            if (_captchaBase64 != null) ...[
-              const SizedBox(height: 22),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF28A745), width: 1.5),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Verificación Captcha',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF14171A),
-                          ),
-                        ),
-                        TextButton.icon(
-                          onPressed: _enviandoCaptcha ? null : _cambiarCaptcha,
-                          icon: const Icon(Icons.refresh, size: 18),
-                          label: const Text('Cambiar'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xFF4A5058),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (bytesCaptcha != null)
-                      Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF3F4F6),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Image.memory(
-                            bytesCaptcha,
-                            height: 62,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _captchaController,
-                      enabled: !_enviandoCaptcha,
-                      maxLength: 6,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 3,
-                      ),
-                      decoration: InputDecoration(
-                        counterText: '',
-                        hintText: 'Escribe el código aquí',
-                        hintStyle: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.normal,
-                          letterSpacing: 0,
-                          color: Color(0xFF9AA0A6),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFFF3F4F6),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      onSubmitted: (_) => _enviarCaptcha(),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 46,
-                      child: ElevatedButton(
-                        onPressed: _enviandoCaptcha ? null : _enviarCaptcha,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF28A745),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          _enviandoCaptcha
-                              ? 'Validando...'
-                              : 'Confirmar y Autocompletar Clave',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 28),
-
-            // SECCIÓN: CUENTAS VINCULADAS (ESTILO EO / **** 9532)
-            const Text(
-              'CUENTAS VINCULADAS',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF88909A),
-                letterSpacing: 0.8,
-              ),
-            ),
-            const SizedBox(height: 10),
-            InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: _abrirCuentasVinculadas,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE6E8EC)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFECEEF2),
-                        borderRadius: BorderRadius.circular(11),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        _cuentaActiva?.iniciales ?? '+',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: Color(0xFF3C4043),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _cuentaActiva?.alias ?? 'Vincular cuenta guardada',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF14171A),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _cuentaActiva?.dniEnmascarado ??
-                                'Toca para guardar DNI y Clave',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF88909A),
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right, color: Color(0xFF88909A)),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 28),
-
-            // SECCIÓN: AJUSTES DE OPERACIÓN
-            const Text(
-              'AJUSTES DE OPERACIÓN',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF88909A),
-                letterSpacing: 0.8,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE6E8EC)),
-              ),
-              child: Column(
-                children: [
-                  // Fila Servidor
-                  InkWell(
-                    onTap: _editarUrlServidor,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Servidor',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF14171A),
-                            ),
-                          ),
-                          Flexible(
-                            child: Text(
-                              _serverUrlController.text,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF88909A),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const Divider(height: 1, color: Color(0xFFECEEF2)),
-                  // Fila Velocidad
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Velocidad',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF14171A),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFECEEF2),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _velocidad,
-                              isDense: true,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF14171A),
-                              ),
-                              items: const [
-                                DropdownMenuItem(
-                                    value: 'TURBO', child: Text('Turbo')),
-                                DropdownMenuItem(
-                                    value: 'NORMAL', child: Text('Normal')),
-                                DropdownMenuItem(
-                                    value: 'LENTO', child: Text('Lento')),
-                              ],
-                              onChanged: (val) async {
-                                if (val == null) return;
-                                final prefs =
-                                    await SharedPreferences.getInstance();
-                                await prefs.setString(_keyVelocidad, val);
-                                setState(() => _velocidad = val);
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _cardContainer({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6E4A9E).withValues(alpha: 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: child,
+    );
+  }
+
+  Widget _dividerLine() {
+    return Container(
+      height: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 18),
+      color: _divider,
     );
   }
 }
