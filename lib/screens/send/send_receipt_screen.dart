@@ -14,6 +14,7 @@ class SendReceiptScreen extends StatelessWidget {
   final double amount;
   final String message;
   final DateTime dateTime;
+  final String destination;
 
   const SendReceiptScreen({
     super.key,
@@ -21,6 +22,7 @@ class SendReceiptScreen extends StatelessWidget {
     required this.amount,
     required this.message,
     required this.dateTime,
+    this.destination = 'Yape',
   });
 
   static const _bgPurple = Color(0xFF742384);
@@ -37,6 +39,12 @@ class SendReceiptScreen extends StatelessWidget {
     'ene.', 'feb.', 'mar.', 'abr.', 'may.', 'jun.',
     'jul.', 'ago.', 'sept.', 'oct.', 'nov.', 'dic.',
   ];
+
+  bool get _esYape => destination.trim().toLowerCase() == 'yape';
+
+  /// En Yape muestra primer nombre + 3 letras del primer apellido ("Rosa Fab*").
+  /// En otros bancos muestra el nombre tal cual llegó del servidor.
+  String get _displayName => _esYape ? contact.maskedName : contact.name;
 
   /// Entero sin decimales ("13"); con decimales siempre dos ("4.50").
   String get _amountText => amount == amount.roundToDouble()
@@ -278,9 +286,9 @@ class SendReceiptScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
 
-          // Nombre del titular (enmascarado por AppContact)
+          // Nombre del titular (enmascarado si es Yape; completo si es otro banco)
           Text(
-            contact.maskedName,
+            _displayName,
             style: appFont(
               fontSize: 21,
               fontWeight: FontWeight.w600,
@@ -384,7 +392,7 @@ class SendReceiptScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _row('Nro. de celular', contact.maskedPhone),
-          _row('Destino', 'Yape'),
+          _row('Destino', destination),
           _row('Nro. de operación', _operationNumber),
           if (message.isNotEmpty) _row('Mensaje', message),
         ],

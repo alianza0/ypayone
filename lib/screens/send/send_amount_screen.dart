@@ -46,6 +46,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   late String _displayedTitle;
   List<String> _otrasEntidades = [];
   bool _sinYape = false;
+  String _destino = 'Yape';
 
   static const _textDark = Color(0xFF2A2540);
   static const _chipBg = Color(0xFFF1EFF8);
@@ -123,6 +124,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
       if (!tieneCupo) {
         _displayedTitle = _formatearCelular(numero);
         _sinYape = true;
+        _destino = 'Yape';
         showAppMessage(
           context,
           'Límite de ${LimiteBusquedasStorage.limiteDiario}/${LimiteBusquedasStorage.limiteDiario} búsquedas alcanzado hoy para este DNI. Se reinicia a las 00:00.',
@@ -143,10 +145,12 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
             nombreRaw.toLowerCase() != 'no leído') {
           _displayedTitle = nombreRaw;
           _sinYape = false;
+          _destino = 'Yape';
           _otrasEntidades = [];
         } else {
           _displayedTitle = _formatearCelular(numero);
           _sinYape = true;
+          _destino = 'Yape';
           final rawEnt = data?['entidades'];
           if (rawEnt is List) {
             _otrasEntidades = rawEnt.map((e) => e.toString()).toList();
@@ -163,7 +167,8 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
     });
   }
 
-  AppContact get _contactoActual => AppContact(_displayedTitle, widget.contact.phone);
+  AppContact get _contactoActual =>
+      AppContact(_displayedTitle, widget.contact.phone);
 
   @override
   void dispose() {
@@ -204,6 +209,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
           amount: amount,
           message: message,
           dateTime: when,
+          destination: _destino,
         ),
       ),
       (route) => route.isFirst,
@@ -310,8 +316,10 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                           nombreEnt.isNotEmpty &&
                           nombreEnt.toLowerCase() != 'no leído') {
                         _displayedTitle = nombreEnt;
+                        _destino = entidad;
                       } else {
                         _displayedTitle = _formatearCelular(numero);
+                        _destino = entidad;
                       }
                     });
                   },

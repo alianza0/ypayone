@@ -21,14 +21,33 @@ class AppContact {
     return (first + second).toUpperCase();
   }
 
-  /// "Rosa Fabián" → "Rosa Fab*"
+  /// "Rosa Maria Luz Fabian QUISPE" → "Rosa Fab*"
+  /// "Rosa Luz Fabian Quispe" → "Rosa Fab*"
+  /// "Rosa Fabian Quispe" → "Rosa Fab*"
   String get maskedName {
     if (_nameIsNumber) return maskedPhone;
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.length < 2) return parts.first;
-    final last = parts[1];
-    final cut = last.length > 3 ? last.substring(0, 3) : last;
-    return '${parts.first} $cut*';
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return maskedPhone;
+    if (parts.length == 1) return _capitalizar(parts.first);
+
+    final firstName = _capitalizar(parts.first);
+    final firstSurnameRaw =
+        parts.length >= 3 ? parts[parts.length - 2] : parts[1];
+    final firstSurname = _capitalizar(firstSurnameRaw);
+    final cut = firstSurname.length > 3
+        ? firstSurname.substring(0, 3)
+        : firstSurname;
+
+    return '$firstName $cut*';
+  }
+
+  String _capitalizar(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1).toLowerCase();
   }
 
   /// "987654321" → "*** *** 321"
