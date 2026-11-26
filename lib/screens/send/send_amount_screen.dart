@@ -170,6 +170,17 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   AppContact get _contactoActual =>
       AppContact(_displayedTitle, widget.contact.phone);
 
+  bool get _esYape => _destino.trim().toLowerCase() == 'yape';
+
+  /// En Yape muestra primer nombre + 3 letras del primer apellido ("Rosa Fab*").
+  /// Si no tiene Yape muestra el número; si es otro banco muestra el nombre completo.
+  String get _tituloEnPantalla {
+    if (_esYape && !_sinYape) {
+      return _contactoActual.maskedName;
+    }
+    return _displayedTitle;
+  }
+
   @override
   void dispose() {
     _amountCtrl.dispose();
@@ -363,7 +374,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                               key: const ValueKey('name'),
                               alignment: Alignment.topCenter,
                               child: Text(
-                                _displayedTitle,
+                                _tituloEnPantalla,
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
