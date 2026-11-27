@@ -39,6 +39,8 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   final _amountCtrl = TextEditingController();
   final _amountFocus = FocusNode();
   final _messageCtrl = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  final _last3Ctrl = TextEditingController();
 
   /// Se mantiene en true hasta que termine la consulta del titular en el servidor.
   bool _loading = true;
@@ -74,18 +76,6 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
       return '${digitos.substring(0, 3)} ${digitos.substring(3, 6)} ${digitos.substring(6)}';
     }
     return raw;
-  }
-
-  /// Convierte cada palabra a Mayúscula Inicial (ej. "juan perez" -> "Juan Perez").
-  String _capitalizarCadaPalabra(String input) {
-    final limpio = input.trim().replaceAll(RegExp(r'\s+'), ' ');
-    if (limpio.isEmpty) return '';
-    return limpio
-        .split(' ')
-        .map((p) => p.isEmpty
-            ? ''
-            : '${p[0].toUpperCase()}${p.substring(1).toLowerCase()}')
-        .join(' ');
   }
 
   Future<String> _obtenerServerUrl() async {
@@ -127,8 +117,14 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
     _displayedTitle = widget.contact.name.trim().isNotEmpty
         ? widget.contact.name.trim()
         : _formatearCelular(_numeroLimpio);
+    _last3Ctrl.text = _ultimos3Digitos;
     _amountCtrl.addListener(() => setState(() {}));
     _consultarTitularEnServidor();
+  }
+
+  void _sincronizarCamposEditables() {
+    _nameCtrl.text = _tituloEnPantalla;
+    _last3Ctrl.text = _ultimos3Digitos;
   }
 
   Future<void> _consultarTitularEnServidor() async {
@@ -205,6 +201,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
     }
 
     if (!mounted) return;
+    _sincronizarCamposEditables();
     setState(() => _loading = false);
 
     Future.delayed(_reveal, () {
@@ -217,7 +214,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   bool get _esYape => _destino.trim().toLowerCase() == 'yape';
 
   /// En Yape muestra primer nombre + 3 letras del primer apellido ("Rosa Fab*").
-  /// Si se editó manualmente, muestra el nombre editado con Mayúscula Inicial.
+  /// Si se editó manualmente, muestra el texto escrito directo.
   String get _tituloEnPantalla {
     if (_nombreEditadoManual) {
       return _displayedTitle;
@@ -228,163 +225,18 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
     return _displayedTitle;
   }
 
-  Future<void> _editarNombre() async {
-    if (_loading) return;
-    FocusScope.of(context).unfocus();
-
-    final tempCtrl = TextEditingController(text: _tituloEnPantalla);
-    final nuevoNombre = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Editar nombre',
-          style: appFont(
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            color: _textDark,
-          ),
-        ),
-        content: TextField(
-          controller: tempCtrl,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          style: appFont(fontSize: 16, color: _textDark),
-          decoration: InputDecoration(
-            hintText: 'Ej. Juan Perez',
-            hintStyle: appFont(fontSize: 15, color: _disabledText),
-            filled: true,
-            fillColor: const Color(0xFFF4F2FA),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-          ),
-          onSubmitted: (v) => Navigator.pop(ctx, v),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancelar',
-              style: appFont(color: _textGrey, fontWeight: FontWeight.w600),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: sendPurple,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onPressed: () => Navigator.pop(ctx, tempCtrl.text),
-            child: Text(
-              'Guardar',
-              style: appFont(fontWeight: FontWeight.w700, color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-    tempCtrl.dispose();
-
-    if (nuevoNombre != null && nuevoNombre.trim().isNotEmpty && mounted) {
-      final formateado = _capitalizarCadaPalabra(nuevoNombre);
-      setState(() {
-        _displayedTitle = formateado;
-        _nombreEditadoManual = true;
-      });
-    }
+  void _onNombreChanged(String value) {
+    _displayedTitle = value.trim();
+    _nombreEditadoManual = true;
   }
 
-  Future<void> _editarUltimos3Digitos() async {
-    if (_loading) return;
-    FocusScope.of(context).unfocus();
-
-    final tempCtrl = TextEditingController(text: _ultimos3Digitos);
-    final nuevos3 = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Últimos 3 dígitos',
-          style: appFont(
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            color: _textDark,
-          ),
-        ),
-        content: TextField(
-          controller: tempCtrl,
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          maxLength: 3,
-          textAlign: TextAlign.center,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          style: appFont(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: _textDark,
-            letterSpacing: 4,
-          ),
-          decoration: InputDecoration(
-            counterText: '',
-            hintText: '929',
-            hintStyle: appFont(fontSize: 20, color: _disabledText),
-            filled: true,
-            fillColor: const Color(0xFFF4F2FA),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-          ),
-          onSubmitted: (v) => Navigator.pop(ctx, v),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancelar',
-              style: appFont(color: _textGrey, fontWeight: FontWeight.w600),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: sendPurple,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onPressed: () => Navigator.pop(ctx, tempCtrl.text),
-            child: Text(
-              'Guardar',
-              style: appFont(fontWeight: FontWeight.w700, color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-    tempCtrl.dispose();
-
-    if (nuevos3 != null && mounted) {
-      final limpios = nuevos3.replaceAll(RegExp(r'\D'), '');
-      if (limpios.length != 3) {
-        showAppMessage(context, 'Ingresa exactamente 3 dígitos.', error: true);
-        return;
-      }
+  void _onUltimos3Changed(String value) {
+    final limpios = value.replaceAll(RegExp(r'\D'), '');
+    if (limpios.length == 3) {
       final digitos = _numeroLimpio;
-      final actualizado = digitos.length >= 3
+      _phoneActual = digitos.length >= 3
           ? '${digitos.substring(0, digitos.length - 3)}$limpios'
           : '999999$limpios';
-      setState(() {
-        _phoneActual = actualizado;
-      });
     }
   }
 
@@ -393,6 +245,8 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
     _amountCtrl.dispose();
     _amountFocus.dispose();
     _messageCtrl.dispose();
+    _nameCtrl.dispose();
+    _last3Ctrl.dispose();
     super.dispose();
   }
 
@@ -540,6 +394,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                         _displayedTitle = _formatearCelular(numero);
                         _destino = entidad;
                       }
+                      _sincronizarCamposEditables();
                     });
                   },
                 ),
@@ -582,33 +437,31 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                               key: const ValueKey('name'),
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                GestureDetector(
-                                  onTap: _editarNombre,
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Text(
-                                    _tituloEnPantalla,
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: appFont(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w700,
-                                      color: sendPurple,
-                                    ),
+                                TextField(
+                                  controller: _nameCtrl,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  textCapitalization: TextCapitalization.words,
+                                  inputFormatters: [_TitleCaseFormatter()],
+                                  onChanged: _onNombreChanged,
+                                  style: appFont(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w700,
+                                    color: sendPurple,
+                                  ),
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    isCollapsed: true,
+                                    contentPadding: EdgeInsets.zero,
                                   ),
                                 ),
                                 const SizedBox(height: 6),
-                                GestureDetector(
-                                  onTap: _editarUltimos3Digitos,
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 2,
-                                    ),
-                                    child: Text(
-                                      '*** *** $_ultimos3Digitos',
-                                      textAlign: TextAlign.center,
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '*** *** ',
                                       style: appFont(
                                         fontSize: 15.5,
                                         fontWeight: FontWeight.w500,
@@ -616,7 +469,33 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                         letterSpacing: 0.4,
                                       ),
                                     ),
-                                  ),
+                                    SizedBox(
+                                      width: 36,
+                                      child: TextField(
+                                        controller: _last3Ctrl,
+                                        keyboardType: TextInputType.number,
+                                        maxLength: 3,
+                                        textAlign: TextAlign.left,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter
+                                              .digitsOnly,
+                                        ],
+                                        onChanged: _onUltimos3Changed,
+                                        style: appFont(
+                                          fontSize: 15.5,
+                                          fontWeight: FontWeight.w500,
+                                          color: _textGrey,
+                                          letterSpacing: 0.4,
+                                        ),
+                                        decoration: const InputDecoration(
+                                          counterText: '',
+                                          border: InputBorder.none,
+                                          isCollapsed: true,
+                                          contentPadding: EdgeInsets.zero,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -768,6 +647,33 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
           Container(height: 1, color: _divider),
         ],
       ),
+    );
+  }
+}
+
+/// Pone en mayúscula la primera letra de cada palabra mientras escribes.
+class _TitleCaseFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final text = newValue.text;
+    if (text.isEmpty) return newValue;
+
+    final buffer = StringBuffer();
+    for (int i = 0; i < text.length; i++) {
+      final char = text[i];
+      if (i == 0 || text[i - 1] == ' ') {
+        buffer.write(char.toUpperCase());
+      } else {
+        buffer.write(char);
+      }
+    }
+
+    return newValue.copyWith(
+      text: buffer.toString(),
+      selection: newValue.selection,
     );
   }
 }
