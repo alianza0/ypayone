@@ -13,6 +13,7 @@ import '../../services/account_prefs_service.dart';
 import '../../widgets/app_message.dart';
 import '../../widgets/circle_icon_button.dart';
 import '../../widgets/skeleton_box.dart';
+import '../settings/autocompletado_beta_screen.dart';
 import '../settings/cuentas_vinculadas_screen.dart';
 import 'send_receipt_screen.dart';
 import 'widgets/amount_display.dart';
@@ -110,50 +111,74 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   Future<void> _consultarTitularEnServidor() async {
     final numero = _numeroLimpio;
     if (numero.length == 9) {
-      final cuentas = await CuentasVinculadasStorage.obtenerCuentas();
-      final activaId = await CuentasVinculadasStorage.obtenerCuentaActivaId();
-      final cuentaActiva = cuentas.where((c) => c.id == activaId).firstOrNull ??
-          (cuentas.isNotEmpty ? cuentas.first : null);
+      final ctrl = AutocompletadoController.instance;
+      await ctrl.inicializarSiHaceFalta(_defaultServerUrl);
 
-      final tieneCupo = await LimiteBusquedasStorage.consumirBusquedaHoy(
-        cuentaActiva?.dni,
-      );
+      // Si figura OFFLINE, verifica una vez con el servidor antes de descartar
+      if (!ctrl.sesionOnline) {
+        await ctrl.consultarEstadoSesion();
+      }
 
       if (!mounted) return;
 
-      if (!tieneCupo) {
+      // Si sigue OFFLINE, no consulta ni descuenta ningún intento
+      if (!ctrl.sesionOnline) {
         _displayedTitle = _formatearCelular(numero);
         _sinYape = true;
         _destino = 'Yape';
-        showAppMessage(
-          context,
-          'Límite de ${LimiteBusquedasStorage.limiteDiario}/${LimiteBusquedasStorage.limiteDiario} búsquedas alcanzado hoy para este DNI. Se reinicia a las 00:00.',
-          error: true,
-        );
       } else {
-        final data = await _llamarBuscarContacto(
-          numero: numero,
-          bancoForzado: null,
-        );
+        final cuentas = await CuentasVinculadasStorage.obtenerCuentas();
+        final activaId = await CuentasVinculadasStorage.obtenerCuentaActivaId();
+        final cuentaActiva =
+            cuentas.where((c) => c.id == activaId).firstOrNull ??
+                (cuentas.isNotEmpty ? cuentas.first : null);
+
+        final restantes =
+            await LimiteBusquedasStorage.obtenerRestantesHoy(cuentaActiva?.dni);
+
         if (!mounted) return;
 
-        final success = data?['success'] == true;
-        final nombreRaw = data?['nombre']?.toString().trim() ?? '';
-
-        if (success &&
-            nombreRaw.isNotEmpty &&
-            nombreRaw.toLowerCase() != 'no leído') {
-          _displayedTitle = nombreRaw;
-          _sinYape = false;
-          _destino = 'Yape';
-          _otrasEntidades = [];
-        } else {
+        if (restantes <= 0) {
           _displayedTitle = _formatearCelular(numero);
           _sinYape = true;
           _destino = 'Yape';
-          final rawEnt = data?['entidades'];
-          if (rawEnt is List) {
-            _otrasEntidades = rawEnt.map((e) => e.toString()).toList();
+          showAppMessage(
+            context,
+            'Límite de ${LimiteBusquedasStorage.limiteDiario}/${LimiteBusquedasStorage.limiteDiario} búsquedas alcanzado hoy para este DNI. Se reinicia a las 00:00.',
+            error: true,
+          );
+        } else {
+          final data = await _llamarBuscarContacto(
+            numero: numero,
+            bancoForzado: null,
+          );
+          if (!mounted) return;
+
+          final success = data?['success'] == true;
+          final requiereSeleccion = data?['requiereSeleccion'] == true;
+          final nombreRaw = data?['nombre']?.toString().trim() ?? '';
+
+          // Solo descuenta el intento si el servidor respondió una búsqueda real
+          if (data != null && (success || requiereSeleccion)) {
+            await LimiteBusquedasStorage.consumirBusquedaHoy(cuentaActiva?.dni);
+            await ctrl.recargarCuentaYLimite();
+          }
+
+          if (success &&
+              nombreRaw.isNotEmpty &&
+              nombreRaw.toLowerCase() != 'no leído') {
+            _displayedTitle = nombreRaw;
+            _sinYape = false;
+            _destino = 'Yape';
+            _otrasEntidades = [];
+          } else {
+            _displayedTitle = _formatearCelular(numero);
+            _sinYape = true;
+            _destino = 'Yape';
+            final rawEnt = data?['entidades'];
+            if (rawEnt is List) {
+              _otrasEntidades = rawEnt.map((e) => e.toString()).toList();
+            }
           }
         }
       }
