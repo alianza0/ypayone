@@ -45,18 +45,28 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   static const _reveal = Duration(milliseconds: 350);
 
   late String _displayedTitle;
+  late String _phoneActual;
+  bool _nombreEditadoManual = false;
   List<String> _otrasEntidades = [];
   bool _sinYape = false;
   String _destino = 'Yape';
 
   static const _textDark = Color(0xFF2A2540);
+  static const _textGrey = Color(0xFF5E5A70);
   static const _chipBg = Color(0xFFF1EFF8);
   static const _divider = Color(0xFFE2E0EA);
   static const _disabledText = Color(0xFFBDBAC9);
   static const _error = Color(0xFFD64545);
 
-  String get _numeroLimpio =>
-      widget.contact.phone.replaceAll(RegExp(r'\D'), '');
+  String get _numeroLimpio => _phoneActual.replaceAll(RegExp(r'\D'), '');
+
+  String get _ultimos3Digitos {
+    final digitos = _numeroLimpio;
+    if (digitos.length >= 3) {
+      return digitos.substring(digitos.length - 3);
+    }
+    return digitos.padLeft(3, '0');
+  }
 
   String _formatearCelular(String raw) {
     final digitos = raw.replaceAll(RegExp(r'\D'), '');
@@ -64,6 +74,18 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
       return '${digitos.substring(0, 3)} ${digitos.substring(3, 6)} ${digitos.substring(6)}';
     }
     return raw;
+  }
+
+  /// Convierte cada palabra a Mayúscula Inicial (ej. "juan perez" -> "Juan Perez").
+  String _capitalizarCadaPalabra(String input) {
+    final limpio = input.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (limpio.isEmpty) return '';
+    return limpio
+        .split(' ')
+        .map((p) => p.isEmpty
+            ? ''
+            : '${p[0].toUpperCase()}${p.substring(1).toLowerCase()}')
+        .join(' ');
   }
 
   Future<String> _obtenerServerUrl() async {
@@ -101,6 +123,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   @override
   void initState() {
     super.initState();
+    _phoneActual = widget.contact.phone;
     _displayedTitle = widget.contact.name.trim().isNotEmpty
         ? widget.contact.name.trim()
         : _formatearCelular(_numeroLimpio);
@@ -114,14 +137,12 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
       final ctrl = AutocompletadoController.instance;
       await ctrl.inicializarSiHaceFalta(_defaultServerUrl);
 
-      // Si figura OFFLINE, verifica una vez con el servidor antes de descartar
       if (!ctrl.sesionOnline) {
         await ctrl.consultarEstadoSesion();
       }
 
       if (!mounted) return;
 
-      // Si sigue OFFLINE, no consulta ni descuenta ningún intento
       if (!ctrl.sesionOnline) {
         _displayedTitle = _formatearCelular(numero);
         _sinYape = true;
@@ -158,7 +179,6 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
           final requiereSeleccion = data?['requiereSeleccion'] == true;
           final nombreRaw = data?['nombre']?.toString().trim() ?? '';
 
-          // Solo descuenta el intento si el servidor respondió una búsqueda real
           if (data != null && (success || requiereSeleccion)) {
             await LimiteBusquedasStorage.consumirBusquedaHoy(cuentaActiva?.dni);
             await ctrl.recargarCuentaYLimite();
@@ -192,18 +212,180 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
     });
   }
 
-  AppContact get _contactoActual =>
-      AppContact(_displayedTitle, widget.contact.phone);
+  AppContact get _contactoActual => AppContact(_displayedTitle, _phoneActual);
 
   bool get _esYape => _destino.trim().toLowerCase() == 'yape';
 
   /// En Yape muestra primer nombre + 3 letras del primer apellido ("Rosa Fab*").
-  /// Si no tiene Yape muestra el número; si es otro banco muestra el nombre completo.
+  /// Si se editó manualmente, muestra el nombre editado con Mayúscula Inicial.
   String get _tituloEnPantalla {
+    if (_nombreEditadoManual) {
+      return _displayedTitle;
+    }
     if (_esYape && !_sinYape) {
       return _contactoActual.maskedName;
     }
     return _displayedTitle;
+  }
+
+  Future<void> _editarNombre() async {
+    if (_loading) return;
+    FocusScope.of(context).unfocus();
+
+    final tempCtrl = TextEditingController(text: _tituloEnPantalla);
+    final nuevoNombre = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Editar nombre',
+          style: appFont(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: _textDark,
+          ),
+        ),
+        content: TextField(
+          controller: tempCtrl,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          style: appFont(fontSize: 16, color: _textDark),
+          decoration: InputDecoration(
+            hintText: 'Ej. Juan Perez',
+            hintStyle: appFont(fontSize: 15, color: _disabledText),
+            filled: true,
+            fillColor: const Color(0xFFF4F2FA),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          onSubmitted: (v) => Navigator.pop(ctx, v),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancelar',
+              style: appFont(color: _textGrey, fontWeight: FontWeight.w600),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: sendPurple,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () => Navigator.pop(ctx, tempCtrl.text),
+            child: Text(
+              'Guardar',
+              style: appFont(fontWeight: FontWeight.w700, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+    tempCtrl.dispose();
+
+    if (nuevoNombre != null && nuevoNombre.trim().isNotEmpty && mounted) {
+      final formateado = _capitalizarCadaPalabra(nuevoNombre);
+      setState(() {
+        _displayedTitle = formateado;
+        _nombreEditadoManual = true;
+      });
+    }
+  }
+
+  Future<void> _editarUltimos3Digitos() async {
+    if (_loading) return;
+    FocusScope.of(context).unfocus();
+
+    final tempCtrl = TextEditingController(text: _ultimos3Digitos);
+    final nuevos3 = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Últimos 3 dígitos',
+          style: appFont(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: _textDark,
+          ),
+        ),
+        content: TextField(
+          controller: tempCtrl,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          maxLength: 3,
+          textAlign: TextAlign.center,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          style: appFont(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: _textDark,
+            letterSpacing: 4,
+          ),
+          decoration: InputDecoration(
+            counterText: '',
+            hintText: '929',
+            hintStyle: appFont(fontSize: 20, color: _disabledText),
+            filled: true,
+            fillColor: const Color(0xFFF4F2FA),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          onSubmitted: (v) => Navigator.pop(ctx, v),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancelar',
+              style: appFont(color: _textGrey, fontWeight: FontWeight.w600),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: sendPurple,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () => Navigator.pop(ctx, tempCtrl.text),
+            child: Text(
+              'Guardar',
+              style: appFont(fontWeight: FontWeight.w700, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+    tempCtrl.dispose();
+
+    if (nuevos3 != null && mounted) {
+      final limpios = nuevos3.replaceAll(RegExp(r'\D'), '');
+      if (limpios.length != 3) {
+        showAppMessage(context, 'Ingresa exactamente 3 dígitos.', error: true);
+        return;
+      }
+      final digitos = _numeroLimpio;
+      final actualizado = digitos.length >= 3
+          ? '${digitos.substring(0, digitos.length - 3)}$limpios'
+          : '999999$limpios';
+      setState(() {
+        _phoneActual = actualizado;
+      });
+    }
   }
 
   @override
@@ -348,6 +530,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                         dataEnt?['nombre']?.toString().trim() ?? '';
                     setState(() {
                       _loading = false;
+                      _nombreEditadoManual = false;
                       if (dataEnt?['success'] == true &&
                           nombreEnt.isNotEmpty &&
                           nombreEnt.toLowerCase() != 'no leído') {
@@ -385,7 +568,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: SizedBox(
-                    height: 64,
+                    height: 82,
                     child: AnimatedSwitcher(
                       duration: _reveal,
                       child: _loading
@@ -395,20 +578,47 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                               height: 64,
                               radius: 2,
                             )
-                          : Align(
+                          : Column(
                               key: const ValueKey('name'),
-                              alignment: Alignment.topCenter,
-                              child: Text(
-                                _tituloEnPantalla,
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: appFont(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w700,
-                                  color: sendPurple,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                GestureDetector(
+                                  onTap: _editarNombre,
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Text(
+                                    _tituloEnPantalla,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: appFont(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w700,
+                                      color: sendPurple,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 6),
+                                GestureDetector(
+                                  onTap: _editarUltimos3Digitos,
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 2,
+                                    ),
+                                    child: Text(
+                                      '*** *** $_ultimos3Digitos',
+                                      textAlign: TextAlign.center,
+                                      style: appFont(
+                                        fontSize: 15.5,
+                                        fontWeight: FontWeight.w500,
+                                        color: _textGrey,
+                                        letterSpacing: 0.4,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                     ),
                   ),
